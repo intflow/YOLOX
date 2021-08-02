@@ -14,7 +14,45 @@ class Exp(MyExp):
         self.num_classes = 2
         self.depth = 0.33
         self.width = 0.50
+# ---------------- dataloader config ---------------- #
+        # set worker to 4 for shorter dataloader init time
+        self.data_num_workers = 8
+        self.input_size = (640, 640)
+        self.random_size = (14, 26)
+        self.train_path = '/data/EdgeFarm_cow/intflow_total_1K'
+        self.val_path = '/data/EdgeFarm_cow/intflow_total_1K'
+        self.train_ann = "label_coco_bbox.json"
+        self.val_ann = "label_coco_bbox.json"
+
+        # --------------- transform config ----------------- #
+        self.degrees = 10.0
+        self.translate = 0.1
+        self.scale = (0.1, 2)
+        self.mscale = (0.8, 1.6)
+        self.shear = 2.0
+        self.perspective = 0.0
+        self.enable_mixup = True
+
+        # --------------  training config --------------------- #
+        self.warmup_epochs = 5
+        self.max_epoch = 300
+        self.warmup_lr = 0
+        self.basic_lr_per_img = 0.01 / 64.0
+        self.scheduler = "yoloxwarmcos"
+        self.no_aug_epochs = 15
+        self.min_lr_ratio = 0.05
+        self.ema = True
+
+        self.weight_decay = 5e-4
+        self.momentum = 0.9
+        self.print_interval = 10
+        self.eval_interval = 10
         self.exp_name = os.path.split(os.path.realpath(__file__))[1].split(".")[0]
+
+        # -----------------  testing config ------------------ #
+        self.test_size = (640, 640)
+        self.test_conf = 0.01
+        self.nmsthre = 0.65
 
     def get_data_loader(self, batch_size, is_distributed, no_aug=False):
         from yolox.data.datasets.intflow import INTFLOWDataset
@@ -25,16 +63,17 @@ class Exp(MyExp):
         import torch.distributed as dist
 
         dataset = INTFLOWDataset(
-                data_dir='/data/EdgeFarm_cow/intflow_total_100K',
-                json_file='label_odtk_025pi_center.json',
+                data_dir=self.train_path,
+                json_file=self.train_ann,
                 name="img_mask",
-                img_size=(1280,720),
+                img_size=self.input_size,
                 preproc=TrainTransform(
                     rgb_means=(0.485, 0.456, 0.406),
                     std=(0.229, 0.224, 0.225),
                     max_labels=50
                 ),
                 rotation=False,
+                compatible_coco=True,
         )
 
         dataset = MosaicDetection(
@@ -79,13 +118,14 @@ class Exp(MyExp):
         from yolox.data import INTFLOWDataset, ValTransform
 
         valdataset = INTFLOWDataset(
-            data_dir='/data/EdgeFarm_cow/intflow_total_1K',
-            json_file='label_odtk_025pi_center.json',
+            data_dir=self.val_path,
+            json_file=self.val_ann,
             name="img_mask",
-            img_size=(1280,720),
+            img_size=self.input_size,
             preproc=ValTransform(
                 rgb_means=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)
             ),
+            compatible_coco=True,
             rotation=False,
         )
 
