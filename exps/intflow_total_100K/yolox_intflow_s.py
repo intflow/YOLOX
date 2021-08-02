@@ -27,12 +27,14 @@ class Exp(MyExp):
         dataset = INTFLOWDataset(
                 data_dir='/data/EdgeFarm_cow/intflow_total_100K',
                 json_file='label_odtk_025pi_center.json',
+                name="img_mask",
                 img_size=(1280,720),
                 preproc=TrainTransform(
                     rgb_means=(0.485, 0.456, 0.406),
                     std=(0.229, 0.224, 0.225),
                     max_labels=50
                 ),
+                rotation=False,
         )
 
         dataset = MosaicDetection(
@@ -79,10 +81,12 @@ class Exp(MyExp):
         valdataset = INTFLOWDataset(
             data_dir='/data/EdgeFarm_cow/intflow_total_1K',
             json_file='label_odtk_025pi_center.json',
+            name="img_mask",
             img_size=(1280,720),
             preproc=ValTransform(
                 rgb_means=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)
             ),
+            rotation=False,
         )
 
         if is_distributed:

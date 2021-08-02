@@ -3,7 +3,7 @@
 # Copyright (c) 2014-2021 Megvii Inc. All rights reserved.
 
 import numpy as np
-
+import cv2
 import torch
 import torchvision
 
@@ -128,3 +128,63 @@ def xyxy2cxcywh(bboxes):
     bboxes[:, 0] = bboxes[:, 0] + bboxes[:, 2] * 0.5
     bboxes[:, 1] = bboxes[:, 1] + bboxes[:, 3] * 0.5
     return bboxes
+
+def rotate_box(rbbox):
+    cx, cy, width, height, theta = rbbox
+
+    xmin, ymin = cx - (width - 1) / 2, cy - (height - 1) / 2
+
+    xy1 = xmin, ymin
+    xy2 = xmin, ymin + height - 1
+    xy3 = xmin + width - 1, ymin + height - 1
+    xy4 = xmin + width - 1, ymin
+
+    cents = np.array([cx, cy])
+
+    corners = np.stack([xy1, xy2, xy3, xy4])
+
+    u = np.stack([np.cos(theta), -np.sin(theta)])
+    l = np.stack([np.sin(theta), np.cos(theta)])
+    R = np.vstack([u, l])
+
+    corners = np.matmul(R, (corners - cents).transpose(1, 0)).transpose(1, 0) + cents
+
+    return corners.reshape(-1).tolist()
+
+
+def rotated2rect(rbbox, width, height):
+    corners = rotate_box(rbbox)
+    x1, y1, x2, y2 = bounding_box_naive(corners)
+    w = x2 - x1
+    h = y2 - y1
+    w_h = 0.5*w
+    h_h = 0.5*h
+    cx = x1 + w_h
+    cy = y1 + h_h
+
+    #resize by rad
+    rad = abs(rbbox[-1])
+    min_scale = 0.3 / np.deg2rad(45)
+    bbox_scale = 1.0 - rad*min_scale
+    w_h *= bbox_scale
+    h_h *= bbox_scale
+    
+    x1 = np.max((0, cx-w_h))
+    y1 = np.max((0, cy-h_h))
+    x2 = np.min((width - 1, cx + np.max((0, w_h - 1))))
+    y2 = np.min((height - 1, cy + np.max((0, h_h - 1))))
+
+    return x1, y1, x2, y2
+
+def bounding_box_naive(corners):
+    """returns a list containing the bottom left and the top right 
+    points in the sequence
+    Here, we use min and max four times over the collection of points
+    """
+    points = np.array(corners).reshape(4,2).tolist()
+    top_left_x = min(point[0] for point in points)
+    top_left_y = min(point[1] for point in points)
+    bot_right_x = max(point[0] for point in points)
+    bot_right_y = max(point[1] for point in points)
+
+    return [top_left_x, top_left_y, bot_right_x, bot_right_y]

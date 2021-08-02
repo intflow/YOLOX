@@ -11,6 +11,7 @@ pp_folder = os.path.abspath(os.path.dirname(p_folder))
 sys.path.append(c_folder)
 sys.path.append(p_folder)
 sys.path.append(pp_folder)
+import yolox.utils.boxes as B
 
 root = '/data/EdgeFarm_cow/intflow_total_100K'
 #root = '/data/EdgeFarm_cow/intflow_total_1K'
@@ -38,28 +39,6 @@ def _nz(x):
         x = 0.0
     return x
 
-def rotate_box(bbox):
-    cx, cy, width, height, theta = bbox
-
-    xmin, ymin = cx - (width - 1) / 2, cy - (height - 1) / 2
-
-    xy1 = xmin, ymin
-    xy2 = xmin, ymin + height - 1
-    xy3 = xmin + width - 1, ymin + height - 1
-    xy4 = xmin + width - 1, ymin
-
-    cents = np.array([cx, cy])
-
-    corners = np.stack([xy1, xy2, xy3, xy4])
-
-    u = np.stack([np.cos(theta), -np.sin(theta)])
-    l = np.stack([np.sin(theta), np.cos(theta)])
-    R = np.vstack([u, l])
-
-    corners = np.matmul(R, (corners - cents).transpose(1, 0)).transpose(1, 0) + cents
-
-    return corners.reshape(-1).tolist()
-
 def annot_overlay_rbbox(img, dets):
         category_dic={0:'Cow',1:'Pig'} #class name
         pose_dic={0:'Standing',1:'Sitting'} #pose name
@@ -80,7 +59,7 @@ def annot_overlay_rbbox(img, dets):
             l3_x=det[9]
             l3_y=det[10]
             
-            seg = rotate_box([cx, cy, width, height, radian])
+            seg = B.rotate_box([cx, cy, width, height, radian])
             
             x1=seg[0]
             y1=seg[1]
@@ -139,7 +118,7 @@ for num1, each_file in enumerate(tqdm.tqdm(json_list)):
         l3_x = _nz(each_annos['hip_x'])
         l3_y = _nz(each_annos['hip_y'])
 
-        seg = rotate_box([cx, cy, width, height, radian])
+        seg = B.rotate_box([cx, cy, width, height, radian])
 
         xmin = _nz(cx - 0.5*width)
         ymin = _nz(cy - 0.5*height)
@@ -185,7 +164,7 @@ for num1, each_file in enumerate(tqdm.tqdm(json_list)):
         #xmin = cx - 0.5 * width
         #ymin = cy - 0.5 * height
         img_id = num1
-        category_id = 0#each_annos['class']
+        category_id = each_annos['class']
         anno_pos = each_annos['position']
         if anno_pos == 'Standing':
             pose_id = 0
