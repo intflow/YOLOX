@@ -13,7 +13,7 @@ sys.path.append(p_folder)
 sys.path.append(pp_folder)
 import yolox.utils.boxes as B
 
-root = '/data/EdgeFarm_cow/intflow_total_100K'
+root = '/data/EdgeFarm_cow/intflow_total_1K'
 #root = '/data/EdgeFarm_cow/intflow_total_1K'
 img_folder_path = os.path.join(root, 'img_mask')
 train_label_path = os.path.join(root, 'label')
@@ -97,8 +97,8 @@ for num1, each_file in enumerate(tqdm.tqdm(json_list)):
     
     if mode == 1:
         img = cv2.imread(os.path.join(img_folder_path, os.path.split(each_file)[-1][:-5]+'.jpg'))
-        h, w, c = img.shape
-        images.append({'id': num1, 'file_name': os.path.split(each_file)[-1][:-5]+'.jpg', 'height':h, 'width':w})
+        h_img, w_img, c = img.shape
+        images.append({'id': num1, 'file_name': os.path.split(each_file)[-1][:-5]+'.jpg', 'height':h_img, 'width':w_img})
     else:
         images.append({'id': num1, 'file_name': os.path.split(each_file)[-1][:-5]+'.jpg'})
     
@@ -175,8 +175,9 @@ for num1, each_file in enumerate(tqdm.tqdm(json_list)):
 
 
         ## Convert intflow's rbbox format into coco bbox format
-        x1,y1,x2,y2 = B.rotated2rect([cx,cy,width,height,radian], w, h)
-
+        x1,y1,x2,y2 = B.rotated2rect([cx,cy,width,height,radian], w_img, h_img)
+        width = x2 - x1
+        height = y2 - y1
 
         organized_anno = [{
             "id": int(id),
@@ -186,8 +187,8 @@ for num1, each_file in enumerate(tqdm.tqdm(json_list)):
             "bbox": [
                 x1,
                 y1,
-                x2,
-                y2
+                width,
+                height
             ],
             "landmark": [
                 l1_x,
