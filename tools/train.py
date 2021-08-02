@@ -32,7 +32,7 @@ def make_parser():
     )
     parser.add_argument("-b", "--batch-size", type=int, default=64, help="batch size")
     parser.add_argument(
-        "-d", "--devices", default=8, type=int, help="device for training"
+        "-d", "--devices", default=4, type=int, help="device for training"
     )
     parser.add_argument(
         "--local_rank", default=0, type=int, help="local rank for dist training"
