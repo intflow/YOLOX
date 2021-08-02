@@ -32,7 +32,7 @@ def make_parser():
     )
     parser.add_argument("-b", "--batch-size", type=int, default=64, help="batch size")
     parser.add_argument(
-        "-d", "--devices", default=None, type=int, help="device for training"
+        "-d", "--devices", default=8, type=int, help="device for training"
     )
     parser.add_argument(
         "--local_rank", default=0, type=int, help="local rank for dist training"
@@ -40,14 +40,14 @@ def make_parser():
     parser.add_argument(
         "-f",
         "--exp_file",
-        default=None,
+        default='exps/intflow_total_100K/yolox_intflow_s.py',
         type=str,
         help="plz input your expriment description file",
     )
     parser.add_argument(
         "--resume", default=False, action="store_true", help="resume training"
     )
-    parser.add_argument("-c", "--ckpt", default=None, type=str, help="checkpoint file")
+    parser.add_argument("-c", "--ckpt", default='/data/pretrained/yolox_s.pth.tar', type=str, help="checkpoint file")
     parser.add_argument(
         "-e",
         "--start_epoch",
@@ -72,7 +72,7 @@ def make_parser():
         "-o",
         "--occupy",
         dest="occupy",
-        default=False,
+        default=True,
         action="store_true",
         help="occupy GPU memory first for training.",
     )
