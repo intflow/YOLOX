@@ -21,7 +21,7 @@ class Exp(MyExp):
         self.random_size = (14, 26)
         self.train_path = '/data/EdgeFarm_cow/intflow_total_1K'
         self.val_path = '/data/EdgeFarm_cow/intflow_total_1K'
-        self.train_ann = "label_odtk_025pi_center.json"
+        self.train_ann = "label_coco_bbox.json"#"label_odtk_025pi_center.json"
         self.val_ann = "label_coco_bbox.json"
 
         # --------------- transform config ----------------- #
@@ -73,7 +73,7 @@ class Exp(MyExp):
                     max_labels=50
                 ),
                 rotation=False,
-                compatible_coco=False,
+                compatible_coco=True,
         )
 
         dataset = MosaicDetection(
