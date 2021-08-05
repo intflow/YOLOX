@@ -1,0 +1,1 @@
+python tools/demo.py video -expn intflow_total_100K -n yolox_intflow_s -f exps/intflow_total_100K/yolox_intflow_s.py -c /data/pretrained/hcow/yolox_intflow_s-intflow_total_100K.pth.tar --path /data/EdgeFarm_cow/video_sample/moonfarm_densecow_20210720_160508447.mp4 --conf 0.25 --nms 0.45 --tsize 640 --save_result --device gpu
