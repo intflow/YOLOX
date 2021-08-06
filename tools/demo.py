@@ -47,7 +47,7 @@ def make_parser():
         type=str,
         help="pls input your expriment description file",
     )
-    parser.add_argument("-c", "--ckpt", default=None, type=str, help="ckpt for eval")
+    parser.add_argument("-c", "--ckpt", default="/data/pretrained/hcow/yolox_intflow_s-intflow_total_100K.pth.tar", type=str, help="ckpt for eval")
     parser.add_argument(
         "--device",
         default="gpu",
