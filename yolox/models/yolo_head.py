@@ -191,7 +191,7 @@ class YOLOXHead(nn.Module):
             pss_output = self.pss_preds[k](reg_feat.detach())
 
             if self.training:
-                output = torch.cat([reg_output, obj_output, pss_output, cls_output], 1)
+                output = torch.cat([reg_output, obj_output, cls_output, pss_output], 1)
                 output, grid = self.get_output_and_grid(
                     output, k, stride_this_level, xin[0].type()
                 )
@@ -246,7 +246,7 @@ class YOLOXHead(nn.Module):
         grid = self.grids[k]
 
         batch_size = output.shape[0]
-        n_ch = 4 + 1 + 1 + self.num_classes #xywh, obj, pss, cls
+        n_ch = 4 + 1 + self.num_classes + 1 #xywh, obj, cls, pss
         hsize, wsize = output.shape[-2:]
         if grid.shape[2:4] != output.shape[2:4]:
             yv, xv = torch.meshgrid([torch.arange(hsize), torch.arange(wsize)])
@@ -292,8 +292,8 @@ class YOLOXHead(nn.Module):
     ):
         bbox_preds = outputs[:, :, :4]  # [batch, n_anchors_all, 4]
         obj_preds = outputs[:, :, 4].unsqueeze(-1)  # [batch, n_anchors_all, 1]
-        pss_preds = outputs[:, :, 5].unsqueeze(-1)  # [batch, n_anchors_all, 1]
-        cls_preds = outputs[:, :, 6:]  # [batch, n_anchors_all, n_cls]
+        cls_preds = outputs[:, :, 5:5+self.num_classes]  # [batch, n_anchors_all, n_cls]
+        pss_preds = outputs[:, :, 5+self.num_classes].unsqueeze(-1)  # [batch, n_anchors_all, 1]
 
         # calculate targets
         mixup = labels.shape[2] > 5
@@ -464,9 +464,9 @@ class YOLOXHead(nn.Module):
             loss,
             reg_weight * loss_iou,
             loss_obj,
-            loss_pss,
             loss_cls,
             loss_l1,
+            loss_pss,
             num_fg / max(num_gts, 1),
         )
 

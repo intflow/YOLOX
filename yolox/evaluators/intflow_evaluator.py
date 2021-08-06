@@ -115,7 +115,7 @@ class INTFLOWEvaluator:
                     inference_time += infer_end - start
 
                 outputs = postprocess(
-                    outputs, self.num_classes, self.confthre, self.nmsthre
+                    outputs, self.num_classes, self.confthre
                 )
                 if is_time_record:
                     nms_end = time_synchronized()

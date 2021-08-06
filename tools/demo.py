@@ -25,7 +25,7 @@ def make_parser():
     parser.add_argument(
         "--demo", default="image", help="demo type, eg. image, video and webcam"
     )
-    parser.add_argument("-expn", "--experiment-name", type=str, default="intflow_total_100K")
+    parser.add_argument("-expn", "--experiment-name", type=str, default="intflow_total_1K")
     parser.add_argument("-n", "--name", type=str, default="yolox_intflow_s", help="model name")
 
     parser.add_argument(
@@ -43,11 +43,11 @@ def make_parser():
     parser.add_argument(
         "-f",
         "--exp_file",
-        default="exps/intflow_total_100K/yolox_intflow_s.py",
+        default="exps/intflow_total_1K/yolox_intflow_s.py",
         type=str,
         help="pls input your expriment description file",
     )
-    parser.add_argument("-c", "--ckpt", default="/data/pretrained/hcow/yolox_intflow_s-intflow_total_100K.pth.tar", type=str, help="ckpt for eval")
+    parser.add_argument("-c", "--ckpt", default="YOLOX_outputs/intflow_total_1K/best_ckpt.pth", type=str, help="ckpt for eval")
     parser.add_argument(
         "--device",
         default="gpu",
@@ -147,7 +147,7 @@ class Predictor(object):
             if self.decoder is not None:
                 outputs = self.decoder(outputs, dtype=outputs.type())
             outputs = postprocess(
-                outputs, self.num_classes, self.confthre, self.nmsthre
+                outputs, self.num_classes, self.confthre
             )
             logger.info("Infer time: {:.4f}s".format(time.time() - t0))
         return outputs, img_info

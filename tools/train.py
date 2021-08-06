@@ -17,7 +17,7 @@ import warnings
 
 def make_parser():
     parser = argparse.ArgumentParser("YOLOX train parser")
-    parser.add_argument("-expn", "--experiment-name", type=str, default="yolox_e2e_intflow_total_1K")
+    parser.add_argument("-expn", "--experiment-name", type=str, default="yolox_e2e_s-intflow_total_1K")
     parser.add_argument("-n", "--name", type=str, default="yolox_e2e_intflow_s", help="model name")
 
     # distributed
