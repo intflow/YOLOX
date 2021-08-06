@@ -42,6 +42,7 @@ class YOLOXHead(nn.Module):
         self.cls_preds = nn.ModuleList()
         self.reg_preds = nn.ModuleList()
         self.obj_preds = nn.ModuleList()
+        self.pss_preds = nn.ModuleList()
         self.stems = nn.ModuleList()
         Conv = DWConv if depthwise else BaseConv
 
@@ -122,6 +123,26 @@ class YOLOXHead(nn.Module):
                     padding=0,
                 )
             )
+            self.pss_preds.append(
+                nn.Sequential(
+                    *[
+                        Conv(
+                            in_channels=int(256 * width),
+                            out_channels=int(256 * width),
+                            ksize=3,
+                            stride=1,
+                            act=act,
+                        ),
+                        nn.Conv2d(
+                            in_channels=int(256 * width),
+                            out_channels=self.n_anchors * 1,
+                            kernel_size=1,
+                            stride=1,
+                            padding=0,
+                        ),
+                    ]
+                )
+            )
 
         self.use_l1 = False
         self.l1_loss = nn.L1Loss(reduction="none")
@@ -137,6 +158,12 @@ class YOLOXHead(nn.Module):
             conv.bias = torch.nn.Parameter(b.view(-1), requires_grad=True)
 
         for conv in self.obj_preds:
+            b = conv.bias.view(self.n_anchors, -1)
+            b.data.fill_(-math.log((1 - prior_prob) / prior_prob))
+            conv.bias = torch.nn.Parameter(b.view(-1), requires_grad=True)
+
+        for layers in self.pss_preds:
+            conv = layers[1]
             b = conv.bias.view(self.n_anchors, -1)
             b.data.fill_(-math.log((1 - prior_prob) / prior_prob))
             conv.bias = torch.nn.Parameter(b.view(-1), requires_grad=True)
@@ -161,9 +188,10 @@ class YOLOXHead(nn.Module):
             reg_feat = reg_conv(reg_x)
             reg_output = self.reg_preds[k](reg_feat)
             obj_output = self.obj_preds[k](reg_feat)
+            pss_output = self.pss_preds[k](reg_feat.detach())
 
             if self.training:
-                output = torch.cat([reg_output, obj_output, cls_output], 1)
+                output = torch.cat([reg_output, obj_output, pss_output, cls_output], 1)
                 output, grid = self.get_output_and_grid(
                     output, k, stride_this_level, xin[0].type()
                 )
@@ -187,7 +215,7 @@ class YOLOXHead(nn.Module):
 
             else:
                 output = torch.cat(
-                    [reg_output, obj_output.sigmoid(), cls_output.sigmoid()], 1
+                    [reg_output, obj_output.sigmoid(), cls_output.sigmoid(), pss_output.sigmoid()], 1
                 )
 
             outputs.append(output)
@@ -218,7 +246,7 @@ class YOLOXHead(nn.Module):
         grid = self.grids[k]
 
         batch_size = output.shape[0]
-        n_ch = 5 + self.num_classes
+        n_ch = 4 + 1 + 1 + self.num_classes #xywh, obj, pss, cls
         hsize, wsize = output.shape[-2:]
         if grid.shape[2:4] != output.shape[2:4]:
             yv, xv = torch.meshgrid([torch.arange(hsize), torch.arange(wsize)])
@@ -264,7 +292,8 @@ class YOLOXHead(nn.Module):
     ):
         bbox_preds = outputs[:, :, :4]  # [batch, n_anchors_all, 4]
         obj_preds = outputs[:, :, 4].unsqueeze(-1)  # [batch, n_anchors_all, 1]
-        cls_preds = outputs[:, :, 5:]  # [batch, n_anchors_all, n_cls]
+        pss_preds = outputs[:, :, 5].unsqueeze(-1)  # [batch, n_anchors_all, 1]
+        cls_preds = outputs[:, :, 6:]  # [batch, n_anchors_all, n_cls]
 
         # calculate targets
         mixup = labels.shape[2] > 5
@@ -285,6 +314,7 @@ class YOLOXHead(nn.Module):
         reg_targets = []
         l1_targets = []
         obj_targets = []
+        pss_targets = []
         fg_masks = []
 
         num_fg = 0.0
@@ -298,6 +328,7 @@ class YOLOXHead(nn.Module):
                 reg_target = outputs.new_zeros((0, 4))
                 l1_target = outputs.new_zeros((0, 4))
                 obj_target = outputs.new_zeros((total_num_anchors, 1))
+                pss_target = outputs.new_zeros((total_num_anchors, 1))
                 fg_mask = outputs.new_zeros(total_num_anchors).bool()
             else:
                 gt_bboxes_per_image = labels[batch_idx, :num_gt, 1:5]
@@ -361,10 +392,23 @@ class YOLOXHead(nn.Module):
                 torch.cuda.empty_cache()
                 num_fg += num_fg_img
 
+                #Calculate PSS mask from fg_mask
+                pss_mask = outputs.new_zeros(total_num_anchors).bool()
+                idx_fg_mask = torch.where(fg_mask == True)[0]
+                for ii in range(num_gt):
+                    idx_pred_ious = torch.where(matched_gt_inds == ii)[0]
+                    try:
+                        idx_best_iou = idx_pred_ious[torch.argmax(pred_ious_this_matching[idx_pred_ious])]
+                        pss_mask[idx_fg_mask[idx_best_iou]] = True
+                    except:
+                        ##print("gt ID[{}] matching faild".format(ii))
+                        A=1
+                    
                 cls_target = F.one_hot(
                     gt_matched_classes.to(torch.int64), self.num_classes
                 ) * pred_ious_this_matching.unsqueeze(-1)
                 obj_target = fg_mask.unsqueeze(-1)
+                pss_target = pss_mask.unsqueeze(-1)
                 reg_target = gt_bboxes_per_image[matched_gt_inds]
                 if self.use_l1:
                     l1_target = self.get_l1_target(
@@ -378,6 +422,7 @@ class YOLOXHead(nn.Module):
             cls_targets.append(cls_target)
             reg_targets.append(reg_target)
             obj_targets.append(obj_target.to(dtype))
+            pss_targets.append(pss_target.to(dtype))
             fg_masks.append(fg_mask)
             if self.use_l1:
                 l1_targets.append(l1_target)
@@ -385,6 +430,7 @@ class YOLOXHead(nn.Module):
         cls_targets = torch.cat(cls_targets, 0)
         reg_targets = torch.cat(reg_targets, 0)
         obj_targets = torch.cat(obj_targets, 0)
+        pss_targets = torch.cat(pss_targets, 0)
         fg_masks = torch.cat(fg_masks, 0)
         if self.use_l1:
             l1_targets = torch.cat(l1_targets, 0)
@@ -395,6 +441,9 @@ class YOLOXHead(nn.Module):
         ).sum() / num_fg
         loss_obj = (
             self.bcewithlog_loss(obj_preds.view(-1, 1), obj_targets)
+        ).sum() / num_fg
+        loss_pss = (
+            self.bcewithlog_loss(pss_preds.view(-1, 1), pss_targets)
         ).sum() / num_fg
         loss_cls = (
             self.bcewithlog_loss(
@@ -409,12 +458,13 @@ class YOLOXHead(nn.Module):
             loss_l1 = 0.0
 
         reg_weight = 5.0
-        loss = reg_weight * loss_iou + loss_obj + loss_cls + loss_l1
+        loss = reg_weight * loss_iou + loss_obj + loss_pss + loss_cls + loss_l1
 
         return (
             loss,
             reg_weight * loss_iou,
             loss_obj,
+            loss_pss,
             loss_cls,
             loss_l1,
             num_fg / max(num_gts, 1),
@@ -507,7 +557,7 @@ class YOLOXHead(nn.Module):
             gt_matched_classes,
             pred_ious_this_matching,
             matched_gt_inds,
-        ) = self.dynamic_k_matching(cost, pair_wise_ious, gt_classes, num_gt, fg_mask)
+        ) = self.dynamic_k_matching(cost, pair_wise_ious, gt_classes, num_gt, fg_mask, K=10)
         del pair_wise_cls_loss, cost, pair_wise_ious, pair_wise_ious_loss
 
         if mode == "cpu":
@@ -609,13 +659,13 @@ class YOLOXHead(nn.Module):
         )
         return is_in_boxes_anchor, is_in_boxes_and_center
 
-    def dynamic_k_matching(self, cost, pair_wise_ious, gt_classes, num_gt, fg_mask):
+    def dynamic_k_matching(self, cost, pair_wise_ious, gt_classes, num_gt, fg_mask, K=10):
         # Dynamic K
         # ---------------------------------------------------------------
         matching_matrix = torch.zeros_like(cost)
 
         ious_in_boxes_matrix = pair_wise_ious
-        n_candidate_k = min(10, ious_in_boxes_matrix.size(1))
+        n_candidate_k = min(K, ious_in_boxes_matrix.size(1))
         topk_ious, _ = torch.topk(ious_in_boxes_matrix, n_candidate_k, dim=1)
         dynamic_ks = torch.clamp(topk_ious.sum(1).int(), min=1)
         for gt_idx in range(num_gt):
