@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding:utf-8 -*-
-# Copyright (c) 2014-2021 Megvii Inc. All rights reserved.
+# Copyright (c) 2019-2021 Intflow Inc. All rights reserved.
 
 from loguru import logger
 
@@ -12,7 +12,7 @@ from yolox.utils import bboxes_iou
 
 import math
 
-from .losses import IOUloss
+from .losses import IOUloss, MultiClassBCELoss
 from .network_blocks import BaseConv, DWConv
 
 
@@ -126,12 +126,12 @@ class YOLOXHead(nn.Module):
             self.pss_preds.append(
                 nn.Sequential(
                     *[
-                        Conv(
+                        nn.Conv2d(
                             in_channels=int(256 * width),
                             out_channels=int(256 * width),
-                            ksize=3,
+                            kernel_size=1,
                             stride=1,
-                            act=act,
+                            padding=0,
                         ),
                         nn.Conv2d(
                             in_channels=int(256 * width),
@@ -146,7 +146,11 @@ class YOLOXHead(nn.Module):
 
         self.use_l1 = False
         self.l1_loss = nn.L1Loss(reduction="none")
-        self.bcewithlog_loss = nn.BCEWithLogitsLoss(reduction="none")
+        self.bfocal_loss = MultiClassBCELoss(use_focal_weights=True,
+                                            focus_param=2,
+                                            balance_param=0.25,
+                                            reduction="none")
+        #self.bfocal_loss = nn.BCEWithLogitsLoss(reduction="none")
         self.iou_loss = IOUloss(reduction="none")
         self.strides = strides
         self.grids = [torch.zeros(1)] * len(in_channels)
@@ -163,10 +167,10 @@ class YOLOXHead(nn.Module):
             conv.bias = torch.nn.Parameter(b.view(-1), requires_grad=True)
 
         for layers in self.pss_preds:
-            conv = layers[1]
-            b = conv.bias.view(self.n_anchors, -1)
-            b.data.fill_(-math.log((1 - prior_prob) / prior_prob))
-            conv.bias = torch.nn.Parameter(b.view(-1), requires_grad=True)
+            for conv in layers:
+                b = conv.bias.view(self.n_anchors, -1)
+                b.data.fill_(-math.log((1 - prior_prob) / prior_prob))
+                conv.bias = torch.nn.Parameter(b.view(-1), requires_grad=True)
 
     def forward(self, xin, labels=None, imgs=None):
         outputs = []
@@ -440,13 +444,13 @@ class YOLOXHead(nn.Module):
             self.iou_loss(bbox_preds.view(-1, 4)[fg_masks], reg_targets)
         ).sum() / num_fg
         loss_obj = (
-            self.bcewithlog_loss(obj_preds.view(-1, 1), obj_targets)
+            self.bfocal_loss(obj_preds.view(-1, 1), obj_targets)
         ).sum() / num_fg
         loss_pss = (
-            self.bcewithlog_loss(pss_preds.view(-1, 1), pss_targets)
+            self.bfocal_loss((obj_preds+pss_preds).view(-1, 1), pss_targets)
         ).sum() / num_fg
         loss_cls = (
-            self.bcewithlog_loss(
+            self.bfocal_loss(
                 cls_preds.view(-1, self.num_classes)[fg_masks], cls_targets
             )
         ).sum() / num_fg

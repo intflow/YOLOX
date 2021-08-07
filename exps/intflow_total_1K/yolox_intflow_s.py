@@ -51,7 +51,7 @@ class Exp(MyExp):
 
         # -----------------  testing config ------------------ #
         self.test_size = (640, 640)
-        self.test_conf = 0.01
+        self.test_conf = 0.2
         self.nmsthre = 0.65
 
     def get_data_loader(self, batch_size, is_distributed, no_aug=False):

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding:utf-8 -*-
-# Copyright (c) 2014-2021 Megvii Inc. All rights reserved.
+# Copyright (c) 2019-2021 Intflow Inc. All rights reserved.
 
 import torch
 import torch.nn as nn
