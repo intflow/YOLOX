@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding:utf-8 -*-
 # Copyright (c) 2019-2021 Intflow Inc. All rights reserved.
+# --Based on YOLOX maed by Megavii Inc.--
 
 from loguru import logger
 
@@ -12,7 +13,7 @@ from yolox.utils import bboxes_iou
 
 import math
 
-from .losses import IOUloss, MultiClassBCELoss
+from .losses import IOUloss, MultiClassBCELoss, PSSBCELoss
 from .network_blocks import BaseConv, DWConv
 
 
@@ -139,18 +140,22 @@ class YOLOXHead(nn.Module):
                             kernel_size=1,
                             stride=1,
                             padding=0,
-                        ),
+                        )
                     ]
                 )
             )
 
         self.use_l1 = False
         self.l1_loss = nn.L1Loss(reduction="none")
-        self.bfocal_loss = MultiClassBCELoss(use_focal_weights=True,
-                                            focus_param=2,
-                                            balance_param=0.25,
-                                            reduction="none")
-        #self.bfocal_loss = nn.BCEWithLogitsLoss(reduction="none")
+        self.focalbce_loss = MultiClassBCELoss(use_focal_weights=True,
+                                                focus_param=2,
+                                                balance_param=0.25,
+                                                reduction="none")
+        self.pss_loss = PSSBCELoss(use_focal_weights=True,
+                                                focus_param=5,
+                                                balance_param=0.25,
+                                                reduction="none")
+        self.bcewithlog_loss = nn.BCEWithLogitsLoss(reduction="none")
         self.iou_loss = IOUloss(reduction="none")
         self.strides = strides
         self.grids = [torch.zeros(1)] * len(in_channels)
@@ -401,13 +406,10 @@ class YOLOXHead(nn.Module):
                 idx_fg_mask = torch.where(fg_mask == True)[0]
                 for ii in range(num_gt):
                     idx_pred_ious = torch.where(matched_gt_inds == ii)[0]
-                    try:
+                    if len(pred_ious_this_matching[idx_pred_ious]) > 0:
                         idx_best_iou = idx_pred_ious[torch.argmax(pred_ious_this_matching[idx_pred_ious])]
                         pss_mask[idx_fg_mask[idx_best_iou]] = True
-                    except:
-                        ##print("gt ID[{}] matching faild".format(ii))
-                        A=1
-                    
+
                 cls_target = F.one_hot(
                     gt_matched_classes.to(torch.int64), self.num_classes
                 ) * pred_ious_this_matching.unsqueeze(-1)
@@ -444,13 +446,13 @@ class YOLOXHead(nn.Module):
             self.iou_loss(bbox_preds.view(-1, 4)[fg_masks], reg_targets)
         ).sum() / num_fg
         loss_obj = (
-            self.bfocal_loss(obj_preds.view(-1, 1), obj_targets)
+            self.focalbce_loss(obj_preds.view(-1, 1), obj_targets)
         ).sum() / num_fg
         loss_pss = (
-            self.bfocal_loss((obj_preds+pss_preds).view(-1, 1), pss_targets)
+            self.focalbce_loss(pss_preds.view(-1, 1), pss_targets)
         ).sum() / num_fg
         loss_cls = (
-            self.bfocal_loss(
+            self.focalbce_loss(
                 cls_preds.view(-1, self.num_classes)[fg_masks], cls_targets
             )
         ).sum() / num_fg
@@ -462,7 +464,8 @@ class YOLOXHead(nn.Module):
             loss_l1 = 0.0
 
         reg_weight = 5.0
-        loss = reg_weight * loss_iou + loss_obj + loss_pss + loss_cls + loss_l1
+        pss_weight = 50.0
+        loss = reg_weight * loss_iou + loss_obj + pss_weight*loss_pss + loss_cls + loss_l1
 
         return (
             loss,
@@ -470,7 +473,7 @@ class YOLOXHead(nn.Module):
             loss_obj,
             loss_cls,
             loss_l1,
-            loss_pss,
+            pss_weight * loss_pss,
             num_fg / max(num_gts, 1),
         )
 

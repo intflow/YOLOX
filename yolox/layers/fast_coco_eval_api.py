@@ -4,6 +4,7 @@
 # https://github.com/facebookresearch/detectron2/blob/master/detectron2/evaluation/fast_eval_api.py
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 # Copyright (c) 2019-2021 Intflow Inc. All rights reserved.
+# --Based on YOLOX maed by Megavii Inc.--
 
 import numpy as np
 from pycocotools.cocoeval import COCOeval

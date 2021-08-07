@@ -4,6 +4,7 @@
 # https://github.com/facebookresearch/detectron2/blob/master/detectron2/utils/comm.py
 # Copyright (c) Facebook, Inc. and its affiliates.
 # Copyright (c) 2019-2021 Intflow Inc. All rights reserved.
+# --Based on YOLOX maed by Megavii Inc.--
 """
 This file contains primitives for multi-gpu communication.
 This is useful when doing distributed training.

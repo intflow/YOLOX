@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- encoding: utf-8 -*-
 # Copyright (c) 2019-2021 Intflow Inc. All rights reserved.
+# --Based on YOLOX maed by Megavii Inc.--
 
 import torch
 import torch.nn as nn
@@ -87,6 +88,55 @@ class MultiClassBCELoss(nn.Module):
         #                                                  target=targets)            
         #else:
         bce_loss = self.nll_loss(input=outputs,
+                                 target=targets)
+        
+        if self.use_focal_weights:
+            logpt = - bce_loss
+            pt    = torch.exp(logpt)
+
+            focal_loss = -((1 - pt) ** self.focus_param) * logpt
+            balanced_focal_loss = self.balance_param * focal_loss
+            
+            return balanced_focal_loss
+        else:
+            return bce_loss 
+
+
+
+
+# Focal loss for PSS
+class PSSBCELoss(nn.Module):
+    def __init__(self,
+                 use_focal_weights=True,
+                 focus_param=2,
+                 balance_param=0.25,
+                 reduction='none'
+                 ):
+        super().__init__()
+
+        #self.use_weight_mask = use_weight_mask
+        self.sigm = nn.Sigmoid()
+        self.bceloss = nn.BCELoss(reduction=reduction)
+        self.use_focal_weights = use_focal_weights
+        self.focus_param = focus_param
+        self.balance_param = balance_param
+        
+    def forward(self,
+                outputs,
+                targets):
+        
+        o1, o2 = outputs
+        t1 = targets
+
+        # inputs and targets are assumed to be BatchxClasses
+        assert len(o1.shape) == len(t1.shape)
+        assert o1.size(0) == t1.size(0)
+        assert o1.size(1) == t1.size(1)
+        
+        outputs = self.sigm(o1) * self.sigm(o2)
+        targets = t1
+
+        bce_loss = self.bceloss(input=outputs,
                                  target=targets)
         
         if self.use_focal_weights:

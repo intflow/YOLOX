@@ -33,9 +33,9 @@ def make_parser():
         type=str,
         help="url used to set up distributed training",
     )
-    parser.add_argument("-b", "--batch-size", type=int, default=8, help="batch size")
+    parser.add_argument("-b", "--batch-size", type=int, default=16, help="batch size")
     parser.add_argument(
-        "-d", "--devices", default=1, type=int, help="device for training"
+        "-d", "--devices", default=4, type=int, help="device for training"
     )
     parser.add_argument(
         "--local_rank", default=0, type=int, help="local rank for dist training"
@@ -53,8 +53,8 @@ def make_parser():
         type=str,
         help="pls input your expriment description file",
     )
-    parser.add_argument("-c", "--ckpt", default="YOLOX_outputs/yolox_e2e_s-intflow_total_1K/best_ckpt.pth", type=str, help="ckpt for eval")
-    parser.add_argument("--conf", default=0.1, type=float, help="test conf")
+    parser.add_argument("-c", "--ckpt", default="YOLOX_outputs/yolox_e2e_s-intflow_total_1K/latest_ckpt.pth", type=str, help="ckpt for eval")
+    parser.add_argument("--conf", default=0.2, type=float, help="test conf")
     parser.add_argument("--nms", default=0.45, type=float, help="test nms threshold")
     parser.add_argument("--tsize", default=640, type=int, help="test img size")
     parser.add_argument("--seed", default=None, type=int, help="eval seed")
