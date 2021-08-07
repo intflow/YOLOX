@@ -127,12 +127,12 @@ class YOLOXHead(nn.Module):
             self.pss_preds.append(
                 nn.Sequential(
                     *[
-                        nn.Conv2d(
+                        Conv(
                             in_channels=int(256 * width),
                             out_channels=int(256 * width),
-                            kernel_size=1,
+                            ksize=3,
                             stride=1,
-                            padding=0,
+                            act=act,
                         ),
                         nn.Conv2d(
                             in_channels=int(256 * width),
@@ -152,7 +152,7 @@ class YOLOXHead(nn.Module):
                                                 balance_param=0.25,
                                                 reduction="none")
         self.pss_loss = PSSBCELoss(use_focal_weights=True,
-                                                focus_param=5,
+                                                focus_param=10,
                                                 balance_param=0.25,
                                                 reduction="none")
         self.bcewithlog_loss = nn.BCEWithLogitsLoss(reduction="none")
@@ -172,10 +172,10 @@ class YOLOXHead(nn.Module):
             conv.bias = torch.nn.Parameter(b.view(-1), requires_grad=True)
 
         for layers in self.pss_preds:
-            for conv in layers:
-                b = conv.bias.view(self.n_anchors, -1)
-                b.data.fill_(-math.log((1 - prior_prob) / prior_prob))
-                conv.bias = torch.nn.Parameter(b.view(-1), requires_grad=True)
+            conv = layers[-1]
+            b = conv.bias.view(self.n_anchors, -1)
+            b.data.fill_(-math.log((1 - prior_prob) / prior_prob))
+            conv.bias = torch.nn.Parameter(b.view(-1), requires_grad=True)
 
     def forward(self, xin, labels=None, imgs=None):
         outputs = []
@@ -449,7 +449,10 @@ class YOLOXHead(nn.Module):
             self.focalbce_loss(obj_preds.view(-1, 1), obj_targets)
         ).sum() / num_fg
         loss_pss = (
-            self.focalbce_loss(pss_preds.view(-1, 1), pss_targets)
+            self.pss_loss([pss_preds.view(-1, 1),
+                            obj_preds.view(-1, 1),
+                            cls_preds.view(-1, self.num_classes).max(dim=1)[0].view(-1,1)], 
+                            pss_targets)
         ).sum() / num_fg
         loss_cls = (
             self.focalbce_loss(

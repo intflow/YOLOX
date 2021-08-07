@@ -125,7 +125,7 @@ class PSSBCELoss(nn.Module):
                 outputs,
                 targets):
         
-        o1, o2 = outputs
+        o1, o2, o3 = outputs
         t1 = targets
 
         # inputs and targets are assumed to be BatchxClasses
@@ -133,7 +133,7 @@ class PSSBCELoss(nn.Module):
         assert o1.size(0) == t1.size(0)
         assert o1.size(1) == t1.size(1)
         
-        outputs = self.sigm(o1) * self.sigm(o2)
+        outputs = self.sigm(o1) * self.sigm(o2) * self.sigm(o3)
         targets = t1
 
         bce_loss = self.bceloss(input=outputs,
