@@ -25,8 +25,8 @@ def make_parser():
     parser.add_argument(
         "--demo", default="image", help="demo type, eg. image, video and webcam"
     )
-    parser.add_argument("-expn", "--experiment-name", type=str, default="intflow_total_100K")
-    parser.add_argument("-n", "--name", type=str, default="yolox_intflow_s", help="model name")
+    parser.add_argument("-expn", "--experiment-name", type=str, default="yolox_s-intflow_total_1K")
+    parser.add_argument("-n", "--name", type=str, default="yolox_s-intflow_total_1K", help="model name")
 
     parser.add_argument(
         "--path", default="./assets/cow.jpg", help="path to images or video"
@@ -43,18 +43,18 @@ def make_parser():
     parser.add_argument(
         "-f",
         "--exp_file",
-        default="exps/intflow_total_100K/yolox_intflow_s.py",
+        default="exps/intflow_total_1K/yolox_intflow_s.py",
         type=str,
         help="pls input your expriment description file",
     )
-    parser.add_argument("-c", "--ckpt", default=None, type=str, help="ckpt for eval")
+    parser.add_argument("-c", "--ckpt", default="/data/pretrained/hcow/yolox_intflow_s-intflow_total_100K.pth.tar", type=str, help="ckpt for eval")
     parser.add_argument(
         "--device",
         default="gpu",
         type=str,
         help="device to run our model, can either be cpu or gpu",
     )
-    parser.add_argument("--conf", default=0.5, type=float, help="test conf")
+    parser.add_argument("--conf", default=0.1, type=float, help="test conf")
     parser.add_argument("--nms", default=0.45, type=float, help="test nms threshold")
     parser.add_argument("--tsize", default=640, type=int, help="test img size")
     parser.add_argument(
@@ -147,7 +147,7 @@ class Predictor(object):
             if self.decoder is not None:
                 outputs = self.decoder(outputs, dtype=outputs.type())
             outputs = postprocess(
-                outputs, self.num_classes, self.confthre, self.nmsthre
+                outputs, self.num_classes, self.confthre
             )
             logger.info("Infer time: {:.4f}s".format(time.time() - t0))
         return outputs, img_info
