@@ -17,8 +17,8 @@ import warnings
 
 def make_parser():
     parser = argparse.ArgumentParser("YOLOX train parser")
-    parser.add_argument("-expn", "--experiment-name", type=str, default="yolox_e2e_s-intflow_total_1K")
-    parser.add_argument("-n", "--name", type=str, default="yolox_e2e_intflow_s", help="model name")
+    parser.add_argument("-expn", "--experiment-name", type=str, default="yolox_e2e_pss_s-intflow_total_1K")
+    parser.add_argument("-n", "--name", type=str, default="yolox_e2e_pss_intflow_s", help="model name")
 
     # distributed
     parser.add_argument(
@@ -49,8 +49,8 @@ def make_parser():
     )
     #parser.add_argument("-c", "--ckpt", default='/data/pretrained/yolox_s.pth.tar', type=str, help="checkpoint file")
     #parser.add_argument("-c", "--ckpt", default='YOLOX_outputs/yolox_e2e_s-intflow_total_1K/best_ckpt.pth', type=str, help="checkpoint file")
-    parser.add_argument("-c", "--ckpt", default='YOLOX_outputs/yolox_e2e_s-intflow_total_1K/latest_ckpt.pth', type=str, help="checkpoint file")
-    #arser.add_argument("-c", "--ckpt", default='/data/pretrained/hcow/yolox_intflow_s-intflow_total_100K.pth.tar', type=str, help="checkpoint file")
+    #parser.add_argument("-c", "--ckpt", default='YOLOX_outputs/yolox_e2e_s-intflow_total_1K/latest_ckpt.pth', type=str, help="checkpoint file")
+    parser.add_argument("-c", "--ckpt", default='/data/pretrained/hcow/yolox_intflow_s-intflow_total_100K.pth.tar', type=str, help="checkpoint file")
     parser.add_argument(
         "-e",
         "--start_epoch",
