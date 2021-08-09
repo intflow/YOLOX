@@ -148,17 +148,17 @@ class YOLOXHead(nn.Module):
         self.use_l1 = False
         self.l1_loss = nn.L1Loss(reduction="none")
         self.focalbce_loss = MultiClassBCELoss(use_focal_weights=True,
-                                                focus_param=5,
+                                                focus_param=2,
                                                 balance_param=0.25,
                                                 reduction="none")
         ###self.pss_loss = MultiClassBCELoss(use_focal_weights=True,
         ###                                        focus_param=20,
         ###                                        balance_param=1.0,
         ###                                        reduction="none")
-        ##self.pss_loss = PSSBCELoss(use_focal_weights=True,
-        ##                                        focus_param=10,
-        ##                                        balance_param=0.25,
-        ##                                        reduction="none")
+        self.pss_loss = PSSBCELoss(use_focal_weights=True,
+                                                focus_param=10,
+                                                balance_param=0.25,
+                                                reduction="none")
         self.bcewithlog_loss = nn.BCEWithLogitsLoss(reduction="none")
         self.iou_loss = IOUloss(reduction="none")
         self.strides = strides
@@ -451,7 +451,7 @@ class YOLOXHead(nn.Module):
             self.iou_loss(bbox_preds.view(-1, 4)[fg_masks], reg_targets)
         ).sum() / num_fg
         loss_obj = (
-            self.focalbce_loss(obj_preds.view(-1, 1), obj_targets)
+            self.pss_loss([obj_preds.view(-1, 1), cls_preds.view(-1, self.num_classes).max(dim=1)[0].view(-1, 1)], obj_targets)
         ).sum() / num_fg
         ###loss_pss = (
         ###    self.pss_loss(pss_preds.view(-1, 1)[fg_masks], pss_targets[fg_masks])
@@ -473,13 +473,13 @@ class YOLOXHead(nn.Module):
             loss_l1 = 0.0
 
         reg_weight = 5.0
-        ###pss_weight = 0.0
-        loss = reg_weight * loss_iou + loss_obj + loss_cls + loss_l1 ### + pss_weight*loss_pss
+        pss_weight = 10.0
+        loss = reg_weight * loss_iou + pss_weight * loss_obj + loss_cls + loss_l1 ### + pss_weight*loss_pss
 
         return (
             loss,
             reg_weight * loss_iou,
-            loss_obj,
+            pss_weight * loss_obj,
             loss_cls,
             loss_l1,
             ###pss_weight * loss_pss,
@@ -564,7 +564,7 @@ class YOLOXHead(nn.Module):
 
         cost = (
             10.0 * pair_wise_cls_loss
-            + 3.0 * pair_wise_ious_loss
+            + pair_wise_ious_loss
             + 100000.0 * (~is_in_boxes_and_center)
         )
 
