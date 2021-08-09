@@ -453,7 +453,7 @@ class YOLOXHead(nn.Module):
         #    self.pss_loss([obj_preds.view(-1, 1), cls_preds.view(-1, self.num_classes).max(dim=1)[0].view(-1, 1)], obj_targets)
         #).sum() / num_fg
         loss_obj = (
-            self.focalbce_loss(obj_preds.view(-1, 1), obj_targets)
+            self.focalbce_loss(obj_preds.view(-1, 1)+cls_preds.view(-1, self.num_classes).max(dim=1)[0].view(-1, 1), obj_targets)
         ).sum() / num_fg
         ###loss_pss = (
         ###    self.pss_loss(pss_preds.view(-1, 1)[fg_masks], pss_targets[fg_masks])
@@ -565,8 +565,8 @@ class YOLOXHead(nn.Module):
         del cls_preds_
 
         cost = (
-            10.0 * pair_wise_cls_loss
-            + pair_wise_ious_loss
+            pair_wise_cls_loss
+            + 3.0 * pair_wise_ious_loss
             + 100000.0 * (~is_in_boxes_and_center)
         )
 
