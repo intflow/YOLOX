@@ -115,40 +115,40 @@ class YOLOXHead(nn.Module):
                     padding=0,
                 )
             )
-            ###self.obj_preds.append(
-            ###    nn.Conv2d(
-            ###        in_channels=int(256 * width),
-            ###        out_channels=self.n_anchors * 1,
-            ###        kernel_size=1,
-            ###        stride=1,
-            ###        padding=0,
-            ###    )
-            ###)
             self.obj_preds.append(
-                nn.Sequential(
-                    *[
-                        Conv(
-                            in_channels=int(256 * width),
-                            out_channels=int(256 * width),
-                            ksize=3,
-                            stride=1,
-                            act=act,
-                        ),
-                        nn.Conv2d(
-                            in_channels=int(256 * width),
-                            out_channels=self.n_anchors * 1,
-                            kernel_size=1,
-                            stride=1,
-                            padding=0,
-                        )
-                    ]
+                nn.Conv2d(
+                    in_channels=int(256 * width),
+                    out_channels=self.n_anchors * 1,
+                    kernel_size=1,
+                    stride=1,
+                    padding=0,
                 )
             )
+            ###self.obj_preds.append(
+            ###    nn.Sequential(
+            ###        *[
+            ###            Conv(
+            ###                in_channels=int(256 * width),
+            ###                out_channels=int(256 * width),
+            ###                ksize=3,
+            ###                stride=1,
+            ###                act=act,
+            ###            ),
+            ###            nn.Conv2d(
+            ###                in_channels=int(256 * width),
+            ###                out_channels=self.n_anchors * 1,
+            ###                kernel_size=1,
+            ###                stride=1,
+            ###                padding=0,
+            ###            )
+            ###        ]
+            ###    )
+            ###)
 
         self.use_l1 = False
         self.l1_loss = nn.L1Loss(reduction="none")
         self.focalbce_loss = MultiClassBCELoss(use_focal_weights=True,
-                                                focus_param=2,
+                                                focus_param=5,
                                                 balance_param=0.25,
                                                 reduction="none")
         ###self.pss_loss = MultiClassBCELoss(use_focal_weights=True,
@@ -450,8 +450,11 @@ class YOLOXHead(nn.Module):
         loss_iou = (
             self.iou_loss(bbox_preds.view(-1, 4)[fg_masks], reg_targets)
         ).sum() / num_fg
+        #loss_obj = (
+        #    self.pss_loss([obj_preds.view(-1, 1), cls_preds.view(-1, self.num_classes).max(dim=1)[0].view(-1, 1)], obj_targets)
+        #).sum() / num_fg
         loss_obj = (
-            self.pss_loss([obj_preds.view(-1, 1), cls_preds.view(-1, self.num_classes).max(dim=1)[0].view(-1, 1)], obj_targets)
+            self.focalbce_loss(obj_preds.view(-1, 1), obj_targets)
         ).sum() / num_fg
         ###loss_pss = (
         ###    self.pss_loss(pss_preds.view(-1, 1)[fg_masks], pss_targets[fg_masks])
