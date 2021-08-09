@@ -1,0 +1,1 @@
+python tools/demo.py --demo video -expn yolox_e2e_s-intflow_total_1K -n yolox_e2e_s-intflow_total_1K -f exps/intflow_total_1K/yolox_intflow_s.py -c YOLOX_outputs/yolox_e2e_s-intflow_total_1K/best_ckpt.pth --path /data/EdgeFarm_cow/video_sample/moonfarm_densecow_20210720_160508447.mp4 --conf 0.2 --nms 0.45 --tsize 640 --save_result --device gpu
