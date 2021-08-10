@@ -49,8 +49,8 @@ def make_parser():
     )
     #parser.add_argument("-c", "--ckpt", default='/data/pretrained/yolox_s.pth.tar', type=str, help="checkpoint file")
     #parser.add_argument("-c", "--ckpt", default='YOLOX_outputs/yolox_e2e_s-intflow_total_1K/best_ckpt.pth', type=str, help="checkpoint file")
-    #parser.add_argument("-c", "--ckpt", default='YOLOX_outputs/yolox_e2e_s-intflow_total_1K/best_ckpt.pth', type=str, help="checkpoint file")
-    parser.add_argument("-c", "--ckpt", default='/data/pretrained/hcow/yolox_intflow_s-intflow_total_100K.pth.tar', type=str, help="checkpoint file")
+    parser.add_argument("-c", "--ckpt", default='YOLOX_outputs/yolox_e2e_s-intflow_total_1K(2)/best_ckpt.pth', type=str, help="checkpoint file")
+    #parser.add_argument("-c", "--ckpt", default='/data/pretrained/hcow/yolox_intflow_s-intflow_total_100K.pth.tar', type=str, help="checkpoint file")
     parser.add_argument(
         "-e",
         "--start_epoch",
