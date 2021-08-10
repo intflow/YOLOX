@@ -191,7 +191,7 @@ class YOLOXHead(nn.Module):
             reg_output = self.reg_preds[k](reg_feat)
             obj_output = self.obj_preds[k](reg_feat)
 
-            obj_output += cls_output.sum(dim=1, keepdim=True)
+            ##obj_output += cls_output.sum(dim=1, keepdim=True)
 
             if self.training:
                 output = torch.cat([reg_output, obj_output, cls_output], 1)
