@@ -43,8 +43,7 @@ class YOLOXHead(nn.Module):
         self.reg_preds = nn.ModuleList()
         self.cls_preds = nn.ModuleList()
         self.obj_preds = nn.ModuleList()
-        self.clspss_preds = nn.ModuleList()
-        self.objpss_preds = nn.ModuleList()
+        self.pss_preds = nn.ModuleList()
         self.stems = nn.ModuleList()
         Conv = DWConv if depthwise else BaseConv
 
@@ -125,16 +124,7 @@ class YOLOXHead(nn.Module):
                     padding=0,
                 )
             )
-            self.clspss_preds.append(
-                nn.Conv2d(
-                    in_channels=int(256 * width),
-                    out_channels=self.n_anchors * self.num_classes,
-                    kernel_size=1,
-                    stride=1,
-                    padding=0,
-                )
-            )
-            self.objpss_preds.append(
+            self.pss_preds.append(
                 nn.Conv2d(
                     in_channels=int(256 * width),
                     out_channels=self.n_anchors * 1,
@@ -174,12 +164,7 @@ class YOLOXHead(nn.Module):
             b.data.fill_(-math.log((1 - prior_prob) / prior_prob))
             conv.bias = torch.nn.Parameter(b.view(-1), requires_grad=True)
 
-        for conv in self.clspss_preds:
-            b = conv.bias.view(self.n_anchors, -1)
-            b.data.fill_(-math.log((1 - prior_prob) / prior_prob))
-            conv.bias = torch.nn.Parameter(b.view(-1), requires_grad=True)
-
-        for conv in self.objpss_preds:
+        for conv in self.pss_preds:
             b = conv.bias.view(self.n_anchors, -1)
             b.data.fill_(-math.log((1 - prior_prob) / prior_prob))
             conv.bias = torch.nn.Parameter(b.view(-1), requires_grad=True)
@@ -200,15 +185,14 @@ class YOLOXHead(nn.Module):
 
             cls_feat = cls_conv(cls_x)
             cls_output = self.cls_preds[k](cls_feat)
-            clspss_output = self.clspss_preds[k](cls_feat.detach())
 
             reg_feat = reg_conv(reg_x)
             reg_output = self.reg_preds[k](reg_feat)
             obj_output = self.obj_preds[k](reg_feat)
-            objpss_output = self.objpss_preds[k](reg_feat.detach())
+            pss_output = self.pss_preds[k](reg_feat.detach())
 
             if self.training:
-                output = torch.cat([reg_output, obj_output, cls_output, objpss_output, clspss_output], 1)
+                output = torch.cat([reg_output, obj_output, cls_output, pss_output], 1)
                 output, grid = self.get_output_and_grid(
                     output, k, stride_this_level, xin[0].type()
                 )
@@ -232,7 +216,7 @@ class YOLOXHead(nn.Module):
 
             else:
                 output = torch.cat(
-                    [reg_output, obj_output.sigmoid(), cls_output.sigmoid(), objpss_output.sigmoid(), clspss_output.sigmoid()], 1
+                    [reg_output, obj_output.sigmoid(), cls_output.sigmoid(), pss_output.sigmoid()], 1
                 )
 
             outputs.append(output)
@@ -263,7 +247,7 @@ class YOLOXHead(nn.Module):
         grid = self.grids[k]
 
         batch_size = output.shape[0]
-        n_ch = 4 + 1 + self.num_classes + 1 + self.num_classes #xywh, obj, cls, objpss, clspss
+        n_ch = 4 + 1 + self.num_classes + 1 #xywh, obj, cls, pss
         hsize, wsize = output.shape[-2:]
         if grid.shape[2:4] != output.shape[2:4]:
             yv, xv = torch.meshgrid([torch.arange(hsize), torch.arange(wsize)])
@@ -310,8 +294,7 @@ class YOLOXHead(nn.Module):
         bbox_preds = outputs[:, :, :4]  # [batch, n_anchors_all, 4]
         obj_preds = outputs[:, :, 4].unsqueeze(-1)  # [batch, n_anchors_all, 1]
         cls_preds = outputs[:, :, 5:5+self.num_classes]  # [batch, n_anchors_all, n_cls]
-        objpss_preds = outputs[:, :, 5+self.num_classes].unsqueeze(-1)  # [batch, n_anchors_all, 1]
-        clspss_preds = outputs[:, :, 6+self.num_classes:6+self.num_classes*2].unsqueeze(-1)  # [batch, n_anchors_all, n_cls]
+        pss_preds = outputs[:, :, 5+self.num_classes].unsqueeze(-1)  # [batch, n_anchors_all, 1]
 
         # calculate targets
         mixup = labels.shape[2] > 5
@@ -331,8 +314,7 @@ class YOLOXHead(nn.Module):
         reg_targets = []
         obj_targets = []
         cls_targets = []
-        objpss_targets = []
-        clspss_targets = []
+        pss_targets = []
         fg_masks = []
         _top1_fg_masks = []
         l1_targets = []
@@ -346,11 +328,10 @@ class YOLOXHead(nn.Module):
             num_gts += num_gt
             if num_gt == 0:
                 cls_target = outputs.new_zeros((0, self.num_classes))
-                clspss_target = outputs.new_zeros((0, self.num_classes))
                 reg_target = outputs.new_zeros((0, 4))
                 l1_target = outputs.new_zeros((0, 4))
                 obj_target = outputs.new_zeros((total_num_anchors, 1))
-                objpss_target = outputs.new_zeros((total_num_anchors, 1))
+                pss_target = outputs.new_zeros((total_num_anchors, 1))
                 fg_mask = outputs.new_zeros(total_num_anchors).bool()
                 _top1_fg_mask = outputs.new_zeros(total_num_anchors).bool()
             else:
@@ -439,12 +420,8 @@ class YOLOXHead(nn.Module):
                     gt_matched_classes.to(torch.int64), self.num_classes
                 ) * pred_ious_this_matching.unsqueeze(-1)
                 obj_target = fg_mask.unsqueeze(-1)
+                pss_target = _top1_fg_mask.unsqueeze(-1)
                 
-                clspss_target = F.one_hot(
-                    _top1_gt_matched_classes.to(torch.int64), self.num_classes
-                ) * _top1_pred_ious_this_matching.unsqueeze(-1)
-                objpss_target = _top1_fg_mask.unsqueeze(-1)
-
                 reg_target = gt_bboxes_per_image[matched_gt_inds]
                 if self.use_l1:
                     l1_target = self.get_l1_target(
@@ -456,22 +433,18 @@ class YOLOXHead(nn.Module):
                     )
 
             cls_targets.append(cls_target)
-            clspss_targets.append(clspss_target)
             reg_targets.append(reg_target)
             obj_targets.append(obj_target.to(dtype))
-            objpss_targets.append(objpss_target.to(dtype))
+            pss_targets.append(pss_target.to(dtype))
             fg_masks.append(fg_mask)
-            _top1_fg_masks.append(_top1_fg_mask)
             if self.use_l1:
                 l1_targets.append(l1_target)
 
         cls_targets = torch.cat(cls_targets, 0)
-        clspss_targets = torch.cat(clspss_targets, 0)
         reg_targets = torch.cat(reg_targets, 0)
         obj_targets = torch.cat(obj_targets, 0)
-        objpss_targets = torch.cat(objpss_targets, 0)
+        pss_targets = torch.cat(pss_targets, 0)
         fg_masks = torch.cat(fg_masks, 0)
-        _top1_fg_masks = torch.cat(_top1_fg_masks, 0)
         if self.use_l1:
             l1_targets = torch.cat(l1_targets, 0)
 
@@ -488,13 +461,8 @@ class YOLOXHead(nn.Module):
                 cls_preds.view(-1, self.num_classes)[fg_masks], cls_targets
             )
         ).sum() / num_fg
-        loss_objpss = (
-            self.focalbce_loss(objpss_preds.view(-1, 1), objpss_targets)
-        ).sum() / _top1_num_fg
-        loss_clspss = (
-            self.focalbce_loss(
-                clspss_preds.view(-1, self.num_classes)[_top1_fg_masks], clspss_targets
-            )
+        loss_pss = (
+            self.focalbce_loss(pss_preds.view(-1, 1), pss_targets)
         ).sum() / _top1_num_fg
         if self.use_l1:
             loss_l1 = (
@@ -504,15 +472,14 @@ class YOLOXHead(nn.Module):
             loss_l1 = 0.0
 
         reg_weight = 5.0
-        loss = reg_weight * loss_iou + loss_obj + loss_cls + loss_l1 + loss_objpss + loss_clspss
+        loss = reg_weight * loss_iou + loss_obj + loss_cls + loss_l1 + loss_pss
 
         return (
             loss,
             reg_weight * loss_iou,
             loss_obj,
             loss_cls,
-            loss_objpss,
-            loss_clspss,
+            loss_pss,
             loss_l1,
             num_fg / max(num_gts, 1),
         )
@@ -594,7 +561,7 @@ class YOLOXHead(nn.Module):
         del cls_preds_
 
         cost = (
-            10.0 * pair_wise_cls_loss
+            pair_wise_cls_loss
             + 3.0 * pair_wise_ious_loss
             + 100000.0 * (~is_in_boxes_and_center)
         )
