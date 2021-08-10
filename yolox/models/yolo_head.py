@@ -190,7 +190,8 @@ class YOLOXHead(nn.Module):
             reg_feat = reg_conv(reg_x)
             reg_output = self.reg_preds[k](reg_feat)
             obj_output = self.obj_preds[k](reg_feat)
-            ###pss_output = self.pss_preds[k](reg_feat.detach())
+
+            obj_output += cls_output.sum(dim=1, keepdim=True)
 
             if self.training:
                 output = torch.cat([reg_output, obj_output, cls_output], 1)
@@ -438,12 +439,12 @@ class YOLOXHead(nn.Module):
         loss_iou = (
             self.iou_loss(bbox_preds.view(-1, 4)[fg_masks], reg_targets)
         ).sum() / num_fg
-        ###loss_obj = (
-        ###    self.focalbce_loss(obj_preds.view(-1, 1), obj_targets)
-        ###).sum() / num_fg
         loss_obj = (
-            self.pss_loss([obj_preds.view(-1, 1),cls_preds.view(-1, self.num_classes).max(dim=1)[0].view(-1,1)], obj_targets)
+            self.focalbce_loss(obj_preds.view(-1, 1), obj_targets)
         ).sum() / num_fg
+        ###loss_obj = (
+        ###    self.pss_loss([obj_preds.view(-1, 1),cls_preds.view(-1, self.num_classes).max(dim=1)[0].view(-1,1)], obj_targets)
+        ###).sum() / num_fg
         loss_cls = (
             self.focalbce_loss(
                 cls_preds.view(-1, self.num_classes)[fg_masks], cls_targets
