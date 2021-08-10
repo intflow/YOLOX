@@ -138,7 +138,7 @@ class Trainer:
 
         if self.amp_training:
             amp.init(enabled=True,allow_banned=True)
-            model, optimizer = amp.initialize(model, self.optimizer, opt_level="O1", allow_banned=True)
+            model, optimizer = amp.initialize(model, self.optimizer, opt_level="O1")
 
         # value of epoch will be set in `resume_train`
         model = self.resume_train(model)
