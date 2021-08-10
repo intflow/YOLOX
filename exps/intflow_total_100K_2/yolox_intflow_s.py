@@ -19,7 +19,7 @@ class Exp(MyExp):
         self.data_num_workers = 8
         self.input_size = (640, 640)
         self.random_size = (14, 26)
-        self.train_path = '/data/EdgeFarm_cow/intflow_total_100K'
+        self.train_path = '/data/EdgeFarm_cow/intflow_total_100K_2'
         self.val_path = '/data/EdgeFarm_cow/intflow_total_1K'
         self.train_ann = "label_odtk_025pi_center.json"
         self.val_ann = "label_coco_bbox.json"
