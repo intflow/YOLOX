@@ -439,7 +439,10 @@ class YOLOXHead(nn.Module):
         loss_iou = (
             self.iou_loss(bbox_preds.view(-1, 4)[fg_masks], reg_targets)
         ).sum() / num_fg
+
+        #neg_bias_cls = cls_preds.sum(dim=2, keepdim=True)
         loss_obj = (
+            #self.focalbce_loss(obj_preds.view(-1, 1) - neg_bias_cls.view(-1, 1), obj_targets)
             self.focalbce_loss(obj_preds.view(-1, 1), obj_targets)
         ).sum() / num_fg
         ###loss_obj = (
