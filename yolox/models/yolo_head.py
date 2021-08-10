@@ -144,10 +144,10 @@ class YOLOXHead(nn.Module):
         ###                                        focus_param=20,
         ###                                        balance_param=1.0,
         ###                                        reduction="none")
-        ##self.pss_loss = PSSBCELoss(use_focal_weights=True,
-        ##                                        focus_param=10,
-        ##                                        balance_param=0.25,
-        ##                                        reduction="none")
+        self.pss_loss = PSSBCELoss(use_focal_weights=True,
+                                                focus_param=5,
+                                                balance_param=0.25,
+                                                reduction="none")
         self.bcewithlog_loss = nn.BCEWithLogitsLoss(reduction="none")
         self.iou_loss = IOUloss(reduction="none")
         self.strides = strides
@@ -441,12 +441,8 @@ class YOLOXHead(nn.Module):
         ###loss_obj = (
         ###    self.focalbce_loss(obj_preds.view(-1, 1), obj_targets)
         ###).sum() / num_fg
-        loss_pss = (
-            self.pss_loss(pss_preds.view(-1, 1)[fg_masks], pss_targets[fg_masks])
-            #self.pss_loss([pss_preds.view(-1, 1)[fg_masks],
-            #                obj_preds.view(-1, 1)[fg_masks],
-            #                cls_preds.view(-1, self.num_classes).max(dim=1)[0].view(-1,1)[fg_masks]], 
-            #                pss_targets[fg_masks])
+        loss_obj = (
+            self.pss_loss([obj_preds.view(-1, 1),cls_preds.view(-1, self.num_classes).max(dim=1)[0].view(-1,1)], obj_targets)
         ).sum() / num_fg
         loss_cls = (
             self.focalbce_loss(
