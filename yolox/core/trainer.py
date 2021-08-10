@@ -7,6 +7,7 @@ from loguru import logger
 import apex
 import torch
 from apex import amp
+amp.init(enabled=True,allow_banned=True)
 from torch.utils.tensorboard import SummaryWriter
 
 from yolox.data import DataPrefetcher
@@ -137,7 +138,6 @@ class Trainer:
         self.optimizer = self.exp.get_optimizer(self.args.batch_size)
 
         if self.amp_training:
-            amp.init(enabled=True,allow_banned=True)
             model, optimizer = amp.initialize(model, self.optimizer, opt_level="O1")
 
         # value of epoch will be set in `resume_train`
