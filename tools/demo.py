@@ -29,7 +29,7 @@ def make_parser():
     parser.add_argument("-n", "--name", type=str, default="yolox_e2e_s-intflow_total_1K", help="model name")
 
     parser.add_argument(
-        "--path", default="./assets/cow2.jpg", help="path to images or video"
+        "--path", default="./assets/cow.jpg", help="path to images or video"
     )
     parser.add_argument("--camid", type=int, default=0, help="webcam demo camera id")
     parser.add_argument(
@@ -47,7 +47,7 @@ def make_parser():
         type=str,
         help="pls input your expriment description file",
     )
-    parser.add_argument("-c", "--ckpt", default="YOLOX_outputs/yolox_e2e_s-intflow_total_1K/last_epoch_ckpt.pth", type=str, help="ckpt for eval")
+    parser.add_argument("-c", "--ckpt", default="YOLOX_outputs/yolox_e2e_s-intflow_total_1K(2)/best_ckpt.pth", type=str, help="ckpt for eval")
     parser.add_argument(
         "--device",
         default="gpu",
@@ -165,7 +165,7 @@ class Predictor(object):
         bboxes /= ratio
 
         cls = output[:, 6]
-        scores = output[:, 4] * output[:, 5]
+        scores = output[:, 4]## * output[:, 5]
 
         vis_res = vis(img, bboxes, scores, cls, cls_conf, self.cls_names)
         return vis_res
