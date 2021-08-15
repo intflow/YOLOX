@@ -226,7 +226,7 @@ class TrainTransform:
         rads = targets[:, 4].copy()
         labels = targets[:, 5].copy()
         if len(boxes) == 0:
-            targets = np.zeros((self.max_labels, 6), dtype=np.float32)
+            targets = np.zeros((self.max_labels, 7), dtype=np.float32)
             image, r_o = preproc(image, input_dim, self.means, self.std)
             image = np.ascontiguousarray(image, dtype=np.float32)
             return image, targets
@@ -262,9 +262,10 @@ class TrainTransform:
 
         labels_t = np.expand_dims(labels_t, 1)
         rads_t = np.expand_dims(rads_t, 1)
+        rads_t = np.concatenate((np.sin(rads_t), np.cos(rads_t)),axis=-1)
         
         targets_t = np.hstack((labels_t, boxes_t, rads_t))
-        padded_labels = np.zeros((self.max_labels, 6))
+        padded_labels = np.zeros((self.max_labels, 7))
         padded_labels[range(len(targets_t))[: self.max_labels]] = targets_t[
             : self.max_labels
         ]

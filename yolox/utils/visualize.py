@@ -5,11 +5,54 @@
 
 import cv2
 import numpy as np
+import yolox.utils.boxes as B
+import os
 
 __all__ = ["vis"]
 
+def vis(img, boxes, rads, scores, cls_ids, conf=0.5, class_names=None):
 
-def vis(img, boxes, scores, cls_ids, conf=0.5, class_names=None):
+    boxes[:,0:4] = B.xyxy2cxcywh(boxes[:,0:4])
+    for i in range(len(boxes)):
+        box = boxes[i]
+        rad = rads[i]
+        cls_id = int(cls_ids[i])
+        score = scores[i]
+        if score < conf:
+            continue
+        cx = int(box[0])
+        cy = int(box[1])
+        w = int(box[2])
+        h = int(box[3])
+        x0 = int(cx - w/2)
+        y0 = int(cy - h/2)
+        [sx1, sy1, sx2, sy2, sx3, sy3, sx4, sy4] = B.rotate_box([cx,cy,w,h,rad])
+
+        color = (_COLORS[cls_id] * 255).astype(np.uint8).tolist()
+        text = '{}:{:.1f}%'.format(class_names[cls_id], score * 100)
+        txt_color = (0, 0, 0) if np.mean(_COLORS[cls_id]) > 0.5 else (255, 255, 255)
+        font = cv2.FONT_HERSHEY_SIMPLEX
+
+        txt_size = cv2.getTextSize(text, font, 0.4, 1)[0]
+        ##cv2.rectangle(img, (x0, y0), (x1, y1), color, 2)
+        cv2.line(img,(int(sx1),int(sy1)),(int(sx2),int(sy2)),color,2)
+        cv2.line(img,(int(sx2),int(sy2)),(int(sx3),int(sy3)),color,2)
+        cv2.line(img,(int(sx3),int(sy3)),(int(sx4),int(sy4)),color,2)
+        cv2.line(img,(int(sx4),int(sy4)),(int(sx1),int(sy1)),color,2)
+
+        txt_bk_color = (_COLORS[cls_id] * 255 * 0.7).astype(np.uint8).tolist()
+        cv2.rectangle(
+            img,
+            (x0, y0 + 1),
+            (x0 + txt_size[0] + 1, y0 + int(1.5*txt_size[1])),
+            txt_bk_color,
+            -1
+        )
+        cv2.putText(img, text, (x0, y0 + txt_size[1]), font, 0.4, txt_color, thickness=1)
+
+    return img
+
+def vis_bbox(img, boxes, scores, cls_ids, conf=0.5, class_names=None):
 
     for i in range(len(boxes)):
         box = boxes[i]
@@ -127,3 +170,111 @@ _COLORS = np.array(
         0.50, 0.5, 0
     ]
 ).astype(np.float32).reshape(-1, 3)
+
+def annot_overlay(img, dets, xyxy=True):
+    category_dic={0:'cow',1:'pig'} #class name
+    pose_dic={0:'Standing',1:'Sitting'} #pose name
+    category_color={0:(255,0,0),1:(0,255,0)} #class color
+    pose_color={0:(255,255,255),1:(0,255,255)} #pose color
+    if len(dets[0]) == 5: #rect bbox case
+        for det in dets:
+            x1=det[0]    #x
+            y1=det[1]    #y
+            x2=det[2]   #width
+            y2=det[3]  #height
+            category_id=int(det[-1])
+            try:
+                cv2.rectangle(img, (int(x1),int(y1)), (int(x2),int(y2)), category_color[category_id], 2)
+                cv2.putText(img, category_dic[category_id], (int(x1-10),int(y1-10)), cv2.FONT_HERSHEY_COMPLEX_SMALL, 0.8, category_color[category_id], 1)
+            except:
+                print('[False Dataset!] ', x1, y1, x2, y2, category_id)
+    elif len(dets[0]) >= 6: #rotated bbox case
+        if xyxy == True:
+            dets[:,0:4] = B.xyxy2cxcywh(dets[:,0:4])
+        for det in dets:
+            if xyxy == True:
+                cx=det[0]    #x
+                cy=det[1]    #y
+                w=det[2]   #width
+                h=det[3]  #height
+                rad=det[4]  #radian
+                category_id=int(det[-1])
+            else:
+                cx=det[1]    #x
+                cy=det[2]    #y
+                w=det[3]   #width
+                h=det[4]  #height
+                category_id=int(det[0])
+                rad = np.arctan2(det[5],det[6])
+            seg = B.rotate_box([cx,cy,w,h,rad])
+            
+            sx1=seg[0]
+            sy1=seg[1]
+            sx2=seg[2]
+            sy2=seg[3]
+            sx3=seg[4]
+            sy3=seg[5]
+            sx4=seg[6]
+            sy4=seg[7]
+            try:
+                #cv2.rectangle(img, (int(x1),int(y1)), (int(x2),int(y2)), category_color[category_id], 2)
+                img=cv2.line(img,(int(sx1),int(sy1)),(int(sx2),int(sy2)),category_color[category_id],2)
+                img=cv2.line(img,(int(sx2),int(sy2)),(int(sx3),int(sy3)),category_color[category_id],2)
+                img=cv2.line(img,(int(sx3),int(sy3)),(int(sx4),int(sy4)),category_color[category_id],2)
+                img=cv2.line(img,(int(sx4),int(sy4)),(int(sx1),int(sy1)),category_color[category_id],2)
+                cv2.putText(img, category_dic[category_id], (int(sx1-10),int(sy1-10)), cv2.FONT_HERSHEY_COMPLEX_SMALL, 0.8, category_color[category_id], 1)
+                cv2.putText(img, "{:.2f}".format(rad), (int(cx-20),int(cy-30)), cv2.FONT_HERSHEY_COMPLEX_SMALL, 1.0, category_color[category_id], 2)
+            except:
+                print('[False Dataset!] ', cx, cy, w, h, rad, category_id)
+    return img
+
+def write_overlay(data, target, id, path):
+    # Create target Directory
+    try:
+        os.mkdir(path)
+        print("Directory " , path ,  " Created ") 
+    except FileExistsError:
+        a=1
+        #print("Directory " , path ,  " already exists")
+    img = data.detach().cpu().numpy()
+    dets = target.copy()
+    img = img*255
+    img = img.astype(np.uint8)
+    img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
+    if len(dets) > 0:
+        img_overlay = annot_overlay(img, dets)
+        cv2.imwrite(path + '/' + str(id)  + '.jpg', img_overlay)
+
+def write_overlay_cv(img, target, id, path):
+    # Create target Directory
+    try:
+        os.mkdir(path)
+        print("Directory " , path ,  " Created ") 
+    except FileExistsError:
+        a=1
+        #print("Directory " , path ,  " already exists") 
+    dets = target.copy()
+    img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
+    if len(dets) > 0:
+        img_overlay = annot_overlay(img, dets)
+        cv2.imwrite(path + '/' + str(id)  + '.jpg', img_overlay)
+
+def write_overlay_preproc(img, target, id, path):
+    # Create target Directory
+    try:
+        os.mkdir(path)
+        print("Directory " , path ,  " Created ") 
+    except FileExistsError:
+        a=1
+        #print("Directory " , path ,  " already exists") 
+
+    img = img.transpose((1,2,0))
+    img += img.min()
+    img /= img.max()
+    img *= 255.0
+    img = img.astype(np.uint8)
+    dets = target.copy()
+    img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
+    if len(dets) > 0:
+        img_overlay = annot_overlay(img, dets, xyxy=False)
+        cv2.imwrite(path + '/' + str(id)  + '.jpg', img_overlay)

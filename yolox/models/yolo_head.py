@@ -42,8 +42,8 @@ class YOLOXHead(nn.Module):
         self.reg_convs = nn.ModuleList()
         self.cls_preds = nn.ModuleList()
         self.reg_preds = nn.ModuleList()
+        self.rad_preds = nn.ModuleList()
         self.obj_preds = nn.ModuleList()
-        ###self.pss_preds = nn.ModuleList()
         self.stems = nn.ModuleList()
         Conv = DWConv if depthwise else BaseConv
 
@@ -115,15 +115,20 @@ class YOLOXHead(nn.Module):
                     padding=0,
                 )
             )
-            ###self.obj_preds.append(
-            ###    nn.Conv2d(
-            ###        in_channels=int(256 * width),
-            ###        out_channels=self.n_anchors * 1,
-            ###        kernel_size=1,
-            ###        stride=1,
-            ###        padding=0,
-            ###    )
-            ###)
+            self.rad_preds.append(
+                nn.Sequential(
+                    *[
+                        nn.Conv2d(
+                            in_channels=int(256 * width),
+                            out_channels=2,
+                            kernel_size=1,
+                            stride=1,
+                            padding=0,
+                        ),
+                        nn.Tanh()
+                    ]
+                )
+            )
             self.obj_preds.append(
                 nn.Conv2d(
                     in_channels=int(256 * width),
@@ -140,10 +145,6 @@ class YOLOXHead(nn.Module):
                                                 focus_param=5,
                                                 balance_param=0.25,
                                                 reduction="none")
-        ###self.pss_loss = MultiClassBCELoss(use_focal_weights=True,
-        ###                                        focus_param=20,
-        ###                                        balance_param=1.0,
-        ###                                        reduction="none")
         self.pss_loss = PSSBCELoss(use_focal_weights=True,
                                                 focus_param=5,
                                                 balance_param=0.25,
@@ -189,12 +190,13 @@ class YOLOXHead(nn.Module):
 
             reg_feat = reg_conv(reg_x)
             reg_output = self.reg_preds[k](reg_feat)
+            rad_output = self.rad_preds[k](reg_feat)
             obj_output = self.obj_preds[k](reg_feat)
 
             ##obj_output += cls_output.sum(dim=1, keepdim=True)
 
             if self.training:
-                output = torch.cat([reg_output, obj_output, cls_output], 1)
+                output = torch.cat([reg_output, obj_output, cls_output, rad_output], 1)
                 output, grid = self.get_output_and_grid(
                     output, k, stride_this_level, xin[0].type()
                 )
@@ -218,7 +220,7 @@ class YOLOXHead(nn.Module):
 
             else:
                 output = torch.cat(
-                    [reg_output, obj_output.sigmoid(), cls_output.sigmoid()], 1
+                    [reg_output, obj_output.sigmoid(), cls_output.sigmoid(), rad_output], 1
                 )
 
             outputs.append(output)
@@ -249,7 +251,7 @@ class YOLOXHead(nn.Module):
         grid = self.grids[k]
 
         batch_size = output.shape[0]
-        n_ch = 4 + 1 + self.num_classes #xywh, obj, cls
+        n_ch = 4 + 1 + self.num_classes + 2 #xywh, obj, cls, rad
         hsize, wsize = output.shape[-2:]
         if grid.shape[2:4] != output.shape[2:4]:
             yv, xv = torch.meshgrid([torch.arange(hsize), torch.arange(wsize)])
@@ -296,7 +298,7 @@ class YOLOXHead(nn.Module):
         bbox_preds = outputs[:, :, :4]  # [batch, n_anchors_all, 4]
         obj_preds = outputs[:, :, 4].unsqueeze(-1)  # [batch, n_anchors_all, 1]
         cls_preds = outputs[:, :, 5:5+self.num_classes]  # [batch, n_anchors_all, n_cls]
-        ####pss_preds = outputs[:, :, 5+self.num_classes].unsqueeze(-1)  # [batch, n_anchors_all, 1]
+        rad_preds = outputs[:, :, 5+self.num_classes:7+self.num_classes]  # [batch, n_anchors_all, n_cls]
 
         # calculate targets
         mixup = labels.shape[2] > 6
@@ -315,9 +317,9 @@ class YOLOXHead(nn.Module):
 
         cls_targets = []
         reg_targets = []
+        rad_targets = []
         l1_targets = []
         obj_targets = []
-        ###pss_targets = []
         fg_masks = []
 
         num_fg = 0.0
@@ -329,14 +331,16 @@ class YOLOXHead(nn.Module):
             if num_gt == 0:
                 cls_target = outputs.new_zeros((0, self.num_classes))
                 reg_target = outputs.new_zeros((0, 4))
+                rad_target = outputs.new_zeros((0, 2))
                 l1_target = outputs.new_zeros((0, 4))
                 obj_target = outputs.new_zeros((total_num_anchors, 1))
-                ###pss_target = outputs.new_zeros((total_num_anchors, 1))
                 fg_mask = outputs.new_zeros(total_num_anchors).bool()
             else:
                 gt_bboxes_per_image = labels[batch_idx, :num_gt, 1:5]
+                gt_rads_per_image = labels[batch_idx, :num_gt, 5:7]
                 gt_classes = labels[batch_idx, :num_gt, 0]
                 bboxes_preds_per_image = bbox_preds[batch_idx]
+                rads_preds_per_image = rad_preds[batch_idx]
 
                 try:
                     (
@@ -410,6 +414,7 @@ class YOLOXHead(nn.Module):
                 obj_target = fg_mask.unsqueeze(-1)
                 ###pss_target = pss_mask.unsqueeze(-1)
                 reg_target = gt_bboxes_per_image[matched_gt_inds]
+                rad_target = gt_rads_per_image[matched_gt_inds]
                 if self.use_l1:
                     l1_target = self.get_l1_target(
                         outputs.new_zeros((num_fg_img, 4)),
@@ -421,16 +426,16 @@ class YOLOXHead(nn.Module):
 
             cls_targets.append(cls_target)
             reg_targets.append(reg_target)
+            rad_targets.append(rad_target)
             obj_targets.append(obj_target.to(dtype))
-            ###pss_targets.append(pss_target.to(dtype))
             fg_masks.append(fg_mask)
             if self.use_l1:
                 l1_targets.append(l1_target)
 
         cls_targets = torch.cat(cls_targets, 0)
         reg_targets = torch.cat(reg_targets, 0)
+        rad_targets = torch.cat(rad_targets, 0)
         obj_targets = torch.cat(obj_targets, 0)
-        ###pss_targets = torch.cat(pss_targets, 0)
         fg_masks = torch.cat(fg_masks, 0)
         if self.use_l1:
             l1_targets = torch.cat(l1_targets, 0)
@@ -439,15 +444,12 @@ class YOLOXHead(nn.Module):
         loss_iou = (
             self.iou_loss(bbox_preds.view(-1, 4)[fg_masks], reg_targets)
         ).sum() / num_fg
-
-        #neg_bias_cls = cls_preds.sum(dim=2, keepdim=True)
+        loss_rad = (
+            self.l1_loss(rad_preds.view(-1, 2)[fg_masks], rad_targets)
+        ).sum() / num_fg
         loss_obj = (
-            #self.focalbce_loss(obj_preds.view(-1, 1) - neg_bias_cls.view(-1, 1), obj_targets)
             self.focalbce_loss(obj_preds.view(-1, 1), obj_targets)
         ).sum() / num_fg
-        ###loss_obj = (
-        ###    self.pss_loss([obj_preds.view(-1, 1),cls_preds.view(-1, self.num_classes).max(dim=1)[0].view(-1,1)], obj_targets)
-        ###).sum() / num_fg
         loss_cls = (
             self.focalbce_loss(
                 cls_preds.view(-1, self.num_classes)[fg_masks], cls_targets
@@ -461,8 +463,7 @@ class YOLOXHead(nn.Module):
             loss_l1 = 0.0
 
         reg_weight = 5.0
-        ###pss_weight = 0.0
-        loss = reg_weight * loss_iou + loss_obj + loss_cls + loss_l1 ### + pss_weight*loss_pss
+        loss = reg_weight * loss_iou + loss_obj + loss_cls + loss_l1 + loss_rad ### + pss_weight*loss_pss
 
         return (
             loss,
@@ -470,7 +471,7 @@ class YOLOXHead(nn.Module):
             loss_obj,
             loss_cls,
             loss_l1,
-            ###pss_weight * loss_pss,
+            loss_rad,
             num_fg / max(num_gts, 1),
         )
 
