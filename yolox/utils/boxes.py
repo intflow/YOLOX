@@ -7,15 +7,22 @@ import numpy as np
 import cv2
 import torch
 import torchvision
+import math
+from retinanet._C import iou as iou_cuda
+from apex import amp
+from Rotated_IoU.oriented_iou_loss import cal_diou, cal_giou
+
 
 __all__ = [
     "filter_box",
     "postprocess",
     "bboxes_iou",
+    "rbboxes_iou",
     "matrix_iou",
     "adjust_box_anns",
     "xyxy2xywh",
     "xyxy2cxcywh",
+    "rotate_boxes",
 ]
 
 
@@ -30,7 +37,7 @@ def filter_box(output, scale_range):
     return output[keep]
 
 
-def postprocess2(prediction, num_classes, conf_thre=0.7, nms_thre=0.45):
+def postprocess_nms(prediction, num_classes, conf_thre=0.7, nms_thre=0.45):
     box_corner = prediction.new(prediction.shape)
     box_corner[:, :, 0] = prediction[:, :, 0] - prediction[:, :, 2] / 2
     box_corner[:, :, 1] = prediction[:, :, 1] - prediction[:, :, 3] / 2
@@ -43,20 +50,16 @@ def postprocess2(prediction, num_classes, conf_thre=0.7, nms_thre=0.45):
         if not image_pred.size(0):
             continue
         # Get score and class with highest confidence
-        class_conf, class_pred = torch.max(
-            image_pred[:, 5 : 5 + num_classes], 1, keepdim=True
-        )##
-        conf_mask = (image_pred[:, 4] * class_conf.squeeze() >= conf_thre).squeeze()
-        # _, conf_mask = torch.topk((image_pred[:, 4] * class_conf.squeeze()), 1000)
-        # Detections ordered as (x1, y1, x2, y2, obj_conf, class_conf, class_pred)
-        detections = torch.cat((image_pred[:, :5], class_conf, class_pred.float()), 1)
+        class_conf, class_pred = torch.max(image_pred[:, 6 : 6 + num_classes], 1, keepdim=True)
+        conf_mask = (torch.sqrt(image_pred[:, 5] * class_conf.squeeze()) >= conf_thre).squeeze()
+        detections = torch.cat((image_pred[:, :6], class_conf, class_pred.float()), 1)
         detections = detections[conf_mask]
         if not detections.size(0):
             continue##
         nms_out_index = torchvision.ops.batched_nms(
             detections[:, :4],
-            detections[:, 4] * detections[:, 5],
-            detections[:, 6],
+            detections[:, 5] * detections[:, 6],
+            detections[:, 7],
             nms_thre,
         )
         detections = detections[nms_out_index]
@@ -82,27 +85,15 @@ def postprocess(prediction, num_classes, conf_thre=0.1):
         if not image_pred.size(0):
             continue
         # Get score and class with highest confidence
-        class_conf, class_pred = torch.max(
-            image_pred[:, 5 : 5 + num_classes], 1, keepdim=True
-        )
+        obj_conf = image_pred[:, 4].unsqueeze(-1)
+        class_conf, class_pred = torch.max(image_pred[:, 5 : 5 + num_classes], 1, keepdim=True)
 
-        #conf_mask = (image_pred[:, 5 + num_classes] >= conf_thre).squeeze()
-        conf_mask = (torch.sqrt(image_pred[:, 4] * class_conf.squeeze()) >= conf_thre).squeeze()
-        #conf_mask = (image_pred[:, 4] >= conf_thre).squeeze()
-        # _, conf_mask = torch.topk((image_pred[:, 4] * class_conf.squeeze()), 1000)
-        # Detections ordered as (x1, y1, x2, y2, obj_conf, class_conf, class_pred)
-        detections = torch.cat((image_pred[:, :5], class_conf, class_pred.float()), 1)
+        conf_mask = (torch.sqrt(obj_conf.squeeze() * class_conf.squeeze()) >= conf_thre).squeeze()
+        detections = torch.cat((image_pred[:, :4], obj_conf, class_conf, class_pred.float()), 1)
         detections = detections[conf_mask]
         if not detections.size(0):
             continue
 
-        ##nms_out_index = torchvision.ops.batched_nms(
-        ##    detections[:, :4],
-        ##    detections[:, 4] * detections[:, 5],
-        ##    detections[:, 6],
-        ##    nms_thre
-        ##),
-        #detections = detections[nms_out_index]
         if output[i] is None:
             output[i] = detections
         else:
@@ -116,24 +107,42 @@ def bboxes_iou(bboxes_a, bboxes_b, xyxy=True):
 
     if xyxy:
         tl = torch.max(bboxes_a[:, None, :2], bboxes_b[:, :2])
-        br = torch.min(bboxes_a[:, None, 2:], bboxes_b[:, 2:])
-        area_a = torch.prod(bboxes_a[:, 2:] - bboxes_a[:, :2], 1)
-        area_b = torch.prod(bboxes_b[:, 2:] - bboxes_b[:, :2], 1)
+        br = torch.min(bboxes_a[:, None, 2:4], bboxes_b[:, 2:4])
+        area_a = torch.prod(bboxes_a[:, 2:4] - bboxes_a[:, :2], 1)
+        area_b = torch.prod(bboxes_b[:, 2:4] - bboxes_b[:, :2], 1)
     else:
         tl = torch.max(
-            (bboxes_a[:, None, :2] - bboxes_a[:, None, 2:] / 2),
-            (bboxes_b[:, :2] - bboxes_b[:, 2:] / 2),
+            (bboxes_a[:, None, :2] - bboxes_a[:, None, 2:4] / 2),
+            (bboxes_b[:, :2] - bboxes_b[:, 2:4] / 2),
         )
         br = torch.min(
-            (bboxes_a[:, None, :2] + bboxes_a[:, None, 2:] / 2),
-            (bboxes_b[:, :2] + bboxes_b[:, 2:] / 2),
+            (bboxes_a[:, None, :2] + bboxes_a[:, None, 2:4] / 2),
+            (bboxes_b[:, :2] + bboxes_b[:, 2:4] / 2),
         )
 
-        area_a = torch.prod(bboxes_a[:, 2:], 1)
-        area_b = torch.prod(bboxes_b[:, 2:], 1)
+        area_a = torch.prod(bboxes_a[:, 2:4], 1)
+        area_b = torch.prod(bboxes_b[:, 2:4], 1)
     en = (tl < br).type(tl.type()).prod(dim=2)
     area_i = torch.prod(br - tl, 2) * en  # * ((tl < br).all())
     return area_i / (area_a[:, None] + area_b - area_i)
+
+def rbboxes_iou(bboxes_a, bboxes_b, fg_mask):
+    if bboxes_a.shape[1] != 5 or bboxes_b.shape[1] != 5:
+        raise IndexError
+
+    pair_wise_iou = bboxes_iou(bboxes_a, bboxes_b, False)
+    ###iou_mask = pair_wise_iou.sum(dim=0)
+###
+    ###bboxes_b_small = bboxes_b[iou_mask>0.3,:]
+###
+    ###n = bboxes_a.shape[0]
+    ###m = bboxes_b_small.shape[0]
+    ###_bboxes_a = bboxes_a[:,None,:] * torch.ones((m,5)).to(bboxes_a.device)
+    ###_bboxes_b = torch.ones((n,5)).to(bboxes_b_small.device)[:,None,:] * bboxes_b_small
+    ###_, pairwise_iou_small = cal_diou(_bboxes_a, _bboxes_b, "pca")
+    ###
+    ###pair_wise_iou[:,iou_mask>0.3] = pairwise_iou_small
+    return pair_wise_iou
 
 
 def matrix_iou(a, b):
@@ -191,6 +200,105 @@ def rotate_box(rbbox):
     return corners.reshape(-1).tolist()
 
 
+def rotate_boxes(rbboxes):
+
+    corners_list = []
+    for rbbox in rbboxes:
+        x1, y1, x2, y2, rad = rbbox
+
+        xmin = x1
+        ymin = y1
+        width = np.max((0.0, x2 - x1))
+        height = np.max((0.0, y2 - y1))
+        cx = xmin + width/2
+        cy = ymin + height/2
+        xy1 = xmin, ymin
+        xy2 = xmin, ymin + height
+        xy3 = xmin + width, ymin + height
+        xy4 = xmin + width, ymin
+
+        cents = np.array([cx, cy])
+
+        corners = np.stack([xy1, xy2, xy3, xy4])
+
+        u = np.stack([np.cos(rad), -np.sin(rad)])
+        l = np.stack([np.sin(rad), np.cos(rad)])
+        R = np.vstack([u, l])
+
+        corners = np.matmul(R, (corners - cents).transpose(1, 0)).transpose(1, 0) + cents
+
+        #Reorder boxes x1y1, x2y2, x1y2, x2y1
+        corners = corners[[0,2,1,3]]
+        corners_list.append(corners)
+    corners_list = np.array(corners_list)
+    return np.array(corners_list)
+
+@amp.float_function
+def order_points(pts):
+    pts_reorder = []
+
+    for idx, pt in enumerate(pts):
+        idx = torch.argsort(pt[:, 0])
+        xSorted = pt[idx, :]
+        leftMost = xSorted[:2, :]
+        rightMost = xSorted[2:, :]
+
+        leftMost = leftMost[torch.argsort(leftMost[:, 1]), :]
+        (tl, bl) = leftMost
+
+        D = torch.cdist(tl[np.newaxis], rightMost)[0]
+        (br, tr) = rightMost[torch.argsort(D, descending=True), :]
+        pts_reorder.append(torch.stack([tl, tr, br, bl]))
+
+    return torch.stack([p for p in pts_reorder])
+
+def rotate_boxes_torch(boxes, points=False):
+    '''
+    Rotate target bounding boxes
+    
+    Input:  
+        Target boxes (xmin_ymin, width_height, sin, cos)
+    Output:
+        boxes_axis (xmin_ymin, xmax_ymax, theta)
+        boxes_rotated (xy0, xy1, xy2, xy3)
+    '''
+
+    u = torch.stack([boxes[:,5], boxes[:,4]], dim=1)
+    l = torch.stack([-boxes[:,4], boxes[:,5]], dim=1)
+    R = torch.stack([u, l], dim=1)
+
+    if points:
+        cents = torch.stack([(boxes[:,0]+boxes[:,2])/2, (boxes[:,1]+boxes[:,3])/2],1).transpose(1,0)
+        boxes_rotated = torch.stack([boxes[:,0],boxes[:,1],
+            boxes[:,2], boxes[:,1],
+            boxes[:,2], boxes[:,3],
+            boxes[:,0], boxes[:,3],
+            boxes[:,-2],
+            boxes[:,-1]],1)
+
+    else:
+        cents = torch.stack([boxes[:,0]+(boxes[:,2])/2, boxes[:,1]+(boxes[:,3])/2],1).transpose(1,0)
+        boxes_rotated = torch.stack([boxes[:,0],boxes[:,1],
+            (boxes[:,0]+boxes[:,2]), boxes[:,1],
+            (boxes[:,0]+boxes[:,2]), (boxes[:,1]+boxes[:,3]),
+            boxes[:,0], (boxes[:,1]+boxes[:,3]),
+            boxes[:,-2],
+            boxes[:,-1]],1)
+
+    xy0R = torch.matmul(R,boxes_rotated[:,:2].transpose(1,0) - cents) + cents
+    xy1R = torch.matmul(R,boxes_rotated[:,2:4].transpose(1,0) - cents) + cents
+    xy2R = torch.matmul(R,boxes_rotated[:,4:6].transpose(1,0) - cents) + cents
+    xy3R = torch.matmul(R,boxes_rotated[:,6:8].transpose(1,0) - cents) + cents
+
+    xy0R = torch.stack([xy0R[i,:,i] for i in range(xy0R.size(0))])
+    xy1R = torch.stack([xy1R[i,:,i] for i in range(xy1R.size(0))])
+    xy2R = torch.stack([xy2R[i,:,i] for i in range(xy2R.size(0))])
+    xy3R = torch.stack([xy3R[i,:,i] for i in range(xy3R.size(0))])
+
+    boxes_rotated = order_points(torch.stack([xy0R,xy1R,xy2R,xy3R],dim = 1)).view(-1,8)
+    
+    return boxes_rotated
+
 def rotated2rect(rbbox, width, height):
     corners = rotate_box(rbbox)
     x1, y1, x2, y2 = bounding_box_naive(corners)
@@ -215,6 +323,19 @@ def rotated2rect(rbbox, width, height):
 
     return x1, y1, x2, y2
 
+def rotated_reform(rbbox, width, height):
+    cx, cy, w, h, rad = rbbox
+    
+    w_h = 0.5*w
+    h_h = 0.5*h
+    
+    x1 = np.max((0, cx-w_h))
+    y1 = np.max((0, cy-h_h))
+    x2 = np.min((width - 1, cx + np.max((0, w_h - 1))))
+    y2 = np.min((height - 1, cy + np.max((0, h_h - 1))))
+
+    return x1, y1, x2, y2, rad
+
 def bounding_box_naive(corners):
     """returns a list containing the bottom left and the top right 
     points in the sequence
@@ -227,3 +348,26 @@ def bounding_box_naive(corners):
     bot_right_y = max(point[1] for point in points)
 
     return [top_left_x, top_left_y, bot_right_x, bot_right_y]
+
+def calc_bearing(corners1, corners2):
+    lat1, long1 = corners1
+    lat2, long2 = corners2
+    dLon = (long2 - long1)
+    x = math.cos(math.radians(lat2)) * math.sin(math.radians(dLon))
+    y = math.cos(math.radians(lat1)) * math.sin(math.radians(lat2)) - math.sin(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.cos(math.radians(dLon))
+    brng = np.arctan2(x,y)
+    brng = np.rad2deg(brng)
+
+    return brng
+
+def corners2rotatedbbox(corners):
+    if len(corners) == 8:
+        corners = np.resize(corners, (4,2))
+    centre = np.mean(np.array(corners), 0)
+    theta = calc_bearing(corners[0], corners[1])
+    rotation = np.array([[np.cos(theta), -np.sin(theta)],
+                         [np.sin(theta), np.cos(theta)]])
+    out_points = np.matmul(corners - centre, rotation) + centre
+    x1, y1 = list(out_points[0,:])
+    x2, y2 = list(out_points[2,:])
+    return [x1, y1, x2, y2, theta]

@@ -299,9 +299,9 @@ class YOLOXHead(nn.Module):
         ####pss_preds = outputs[:, :, 5+self.num_classes].unsqueeze(-1)  # [batch, n_anchors_all, 1]
 
         # calculate targets
-        mixup = labels.shape[2] > 5
+        mixup = labels.shape[2] > 6
         if mixup:
-            label_cut = labels[..., :5]
+            label_cut = labels[..., :6]
         else:
             label_cut = labels
         nlabel = (label_cut.sum(dim=2) > 0).sum(dim=1)  # number of objects

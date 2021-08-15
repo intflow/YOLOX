@@ -2,15 +2,18 @@
 # -*- coding:utf-8 -*-
 # Copyright (c) Megvii, Inc. and its affiliates.
 
+import random
+
 import cv2
 import numpy as np
 
 from yolox.utils import adjust_box_anns
 
-import random
-
 from ..data_augment import box_candidates, random_perspective
 from .datasets_wrapper import Dataset
+from PIL import Image
+import torch
+import yolox.utils.visualize as V
 
 
 def get_mosaic_coordinate(mosaic_image, mosaic_index, xc, yc, w, h, input_h, input_w):
@@ -114,6 +117,7 @@ class MosaicDetection(Dataset):
                     labels[:, 1] = scale * _labels[:, 1] + padh
                     labels[:, 2] = scale * _labels[:, 2] + padw
                     labels[:, 3] = scale * _labels[:, 3] + padh
+                
                 mosaic_labels.append(labels)
 
             if len(mosaic_labels):
@@ -122,6 +126,9 @@ class MosaicDetection(Dataset):
                 np.clip(mosaic_labels[:, 1], 0, 2 * input_h, out=mosaic_labels[:, 1])
                 np.clip(mosaic_labels[:, 2], 0, 2 * input_w, out=mosaic_labels[:, 2])
                 np.clip(mosaic_labels[:, 3], 0, 2 * input_h, out=mosaic_labels[:, 3])
+
+            ## Write overlay image for debugging
+            ###V.write_overlay_cv(mosaic_img, mosaic_labels, idx, 'tmp_figs_mosaic') #Use only for visual debug on image augmentation an its label
 
             mosaic_img, mosaic_labels = random_perspective(
                 mosaic_img,
@@ -133,6 +140,7 @@ class MosaicDetection(Dataset):
                 perspective=self.perspective,
                 border=[-input_h // 2, -input_w // 2],
             )  # border to remove
+            ###V.write_overlay_cv(mosaic_img, mosaic_labels, idx, 'tmp_figs_persp') #Use only for visual debug on image augmentation an its label
 
             # -----------------------------------------------------------------
             # CopyPaste: https://arxiv.org/abs/2012.07177
@@ -142,6 +150,8 @@ class MosaicDetection(Dataset):
             mix_img, padded_labels = self.preproc(mosaic_img, mosaic_labels, self.input_dim)
             img_info = (mix_img.shape[1], mix_img.shape[0])
 
+            ###V.write_overlay_cv(mosaic_img, mosaic_labels, idx, 'tmp_figs_mixup') #Use only for visual debug on image augmentation an its label
+            ###V.write_overlay_preproc(mix_img, padded_labels, idx, 'tmp_figs_preproc') #Use only for visual debug on image augmentation an its label
             return mix_img, padded_labels, img_info, np.array([idx])
 
         else:
@@ -199,10 +209,13 @@ class MosaicDetection(Dataset):
         cp_bboxes_origin_np = adjust_box_anns(
             cp_labels[:, :4].copy(), cp_scale_ratio, 0, 0, origin_w, origin_h
         )
+        cp_rad_origin_np = (cp_labels[:, 4].copy()).reshape((-1,1))
         if FLIP:
             cp_bboxes_origin_np[:, 0::2] = (
                 origin_w - cp_bboxes_origin_np[:, 0::2][:, ::-1]
             )
+            cp_rad_origin_np *= -1
+            
         cp_bboxes_transformed_np = cp_bboxes_origin_np.copy()
         cp_bboxes_transformed_np[:, 0::2] = np.clip(
             cp_bboxes_transformed_np[:, 0::2] - x_offset, 0, target_w
@@ -213,9 +226,10 @@ class MosaicDetection(Dataset):
         keep_list = box_candidates(cp_bboxes_origin_np.T, cp_bboxes_transformed_np.T, 5)
 
         if keep_list.sum() >= 1.0:
-            cls_labels = cp_labels[keep_list, 4:5].copy()
+            cls_labels = cp_labels[keep_list, 5:].copy()
+            rad_labels = cp_rad_origin_np[keep_list]
             box_labels = cp_bboxes_transformed_np[keep_list]
-            labels = np.hstack((box_labels, cls_labels))
+            labels = np.hstack((box_labels, rad_labels, cls_labels))
             origin_labels = np.vstack((origin_labels, labels))
             origin_img = origin_img.astype(np.float32)
             origin_img = 0.5 * origin_img + 0.5 * padded_cropped_img.astype(np.float32)

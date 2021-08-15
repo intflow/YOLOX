@@ -11,6 +11,7 @@ import os
 from yolox.data.dataloading import get_yolox_datadir
 from yolox.data.datasets.datasets_wrapper import Dataset
 import yolox.utils.boxes as B
+import yolox.utils.visualize as V
 from PIL import Image
 import torch
 
@@ -27,7 +28,7 @@ class INTFLOWDataset(Dataset):
         name="img_mask",
         img_size=(416, 416),
         preproc=None,
-        rotation=False,
+        rotation=True,
         compatible_coco=False
     ):
         """
@@ -62,43 +63,13 @@ class INTFLOWDataset(Dataset):
     def _load_intflow_annotations(self):
         if self.rotation == True:
             annots = [self.load_anno_from_ids_rbbox(_ids) for _ids in self.ids]
-        if self.compatible_coco == True:
+        elif self.compatible_coco == True:
             annots = [self.load_anno_from_ids_coco(_ids) for _ids in self.ids]
         else:
             annots = [self.load_anno_from_ids_bbox(_ids) for _ids in self.ids]
 
         return annots
 
-    def write_overlay(self, data, target, id):
-            img = data.detach().cpu().numpy()
-            dets = target
-            img = img*255
-            img = img.astype(np.uint8)
-            img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
-            img_overlay = self.annot_overlay(img, dets)
-            cv2.imwrite('tmp_figs/' + str(id)  + '.jpg', img_overlay)
-
-    def annot_overlay(self, img, dets):
-        category_dic={0:'cow',1:'pig'} #class name
-        pose_dic={0:'Standing',1:'Sitting'} #pose name
-        category_color={0:(255,0,0),1:(0,255,0)} #class color
-        pose_color={0:(255,255,255),1:(0,255,255)} #pose color
-
-        for det in dets:
-            x1=det[0]    #x
-            y1=det[1]    #y
-            x2=det[2]   #width
-            y2=det[3]  #height
-            category_id=int(det[-1])
-            try:
-                cv2.rectangle(img, (int(x1),int(y1)), (int(x2),int(y2)), category_color[category_id], 2)
-                cv2.putText(img, category_dic[category_id], (int(x1-10),int(y1-10)), cv2.FONT_HERSHEY_COMPLEX_SMALL, 0.8, category_color[category_id], 1)
-            except:
-                print('[False Dataset!] ', x1, y1, x2, y2, category_id)
-           
-        return img
-
-    ##TODO : Need to make rbbox dataloader
     def load_anno_from_ids_rbbox(self, id_):
         im_ann = self.coco.loadImgs(id_)[0]
         width = im_ann["width"]
@@ -107,23 +78,19 @@ class INTFLOWDataset(Dataset):
         annotations = self.coco.loadAnns(anno_ids)
         objs = []
         for obj in annotations:
-            cx = np.max((0, obj["bbox"][0]))
-            cy = np.max((0, obj["bbox"][1]))
-            w = np.max((0, obj["bbox"][2]))
-            h = np.max((0, obj["bbox"][3]))
-            rad = obj["bbox"][4]
-            if obj["area"] > 0 and w > 1 and h >= 1:
-                obj["clean_bbox"] = [cx, cy, w, h]
+            x1,y1,x2,y2,rad = B.rotated_reform(obj["bbox"][0:5], width, height)
+            if obj["area"] > 0 and x2 > x1 and y2 > y1:
+                obj["clean_bbox"] = [x1,y1,x2,y2,rad]
                 objs.append(obj)
 
         num_objs = len(objs)
 
-        res = np.zeros((num_objs, 5))
+        res = np.zeros((num_objs, 6))
 
         for ix, obj in enumerate(objs):
             cls = self.class_ids.index(obj["category_id"])
-            res[ix, 0:4] = obj["clean_bbox"]
-            res[ix, 4] = cls
+            res[ix, 0:5] = obj["clean_bbox"]
+            res[ix, 5] = cls
 
         img_info = (height, width)
 
@@ -136,7 +103,7 @@ class INTFLOWDataset(Dataset):
         ####im = Image.open('{}/{}/{}'.format(self.data_dir, self.name, img_name)).convert("RGB")
         ####data = torch.ByteTensor(torch.ByteStorage.from_buffer(im.tobytes()))
         ####data = data.float().div(255).view(*im.size[::-1], len(im.mode))
-        ####self.write_overlay(data, res, id_) #Use only for visual debug on image augmentation an its label
+        ####V.write_overlay(data, res, id_, 'tmp_figs') #Use only for visual debug on image augmentation an its label
 
         return (res, img_info, file_name)
 
@@ -149,7 +116,7 @@ class INTFLOWDataset(Dataset):
         objs = []
         for obj in annotations:  
             x1,y1,x2,y2 = B.rotated2rect(obj["bbox"][0:5], width, height)
-            if obj["area"] > 0 and x2 >= x1 and y2 >= y1:
+            if obj["area"] > 0 and x2 > x1 and y2 > y1:
                 obj["clean_bbox"] = [x1, y1, x2, y2]
                 objs.append(obj)
 
@@ -168,12 +135,12 @@ class INTFLOWDataset(Dataset):
 
         del im_ann, annotations
 
-        ###### Write overlay image for debugging
-        ####img_name = self.coco.loadImgs(id_)[0]['file_name']
-        ####im = Image.open('{}/{}/{}'.format(self.data_dir, self.name, img_name)).convert("RGB")
-        ####data = torch.ByteTensor(torch.ByteStorage.from_buffer(im.tobytes()))
-        ####data = data.float().div(255).view(*im.size[::-1], len(im.mode))
-        ####self.write_overlay(data, res, id_) #Use only for visual debug on image augmentation an its label
+        ##### Write overlay image for debugging
+        ###img_name = self.coco.loadImgs(id_)[0]['file_name']
+        ###im = Image.open('{}/{}/{}'.format(self.data_dir, self.name, img_name)).convert("RGB")
+        ###data = torch.ByteTensor(torch.ByteStorage.from_buffer(im.tobytes()))
+        ###data = data.float().div(255).view(*im.size[::-1], len(im.mode))
+        ###V.write_overlay(data, res, id_, 'tmp_figs') #Use only for visual debug on image augmentation an its label
 
         return (res, img_info, file_name)        
 
@@ -189,7 +156,7 @@ class INTFLOWDataset(Dataset):
             y1 = np.max((0, obj["bbox"][1]))
             x2 = np.min((width - 1, x1 + np.max((0, obj["bbox"][2] - 1))))
             y2 = np.min((height - 1, y1 + np.max((0, obj["bbox"][3] - 1))))
-            if obj["area"] > 0 and x2 >= x1 and y2 >= y1:
+            if obj["area"] > 0 and x2 > x1 and y2 > y1:
                 obj["clean_bbox"] = [x1, y1, x2, y2]
                 objs.append(obj)
 
@@ -213,7 +180,7 @@ class INTFLOWDataset(Dataset):
         ####im = Image.open('{}/{}/{}'.format(self.data_dir, self.name, img_name)).convert("RGB")
         ####data = torch.ByteTensor(torch.ByteStorage.from_buffer(im.tobytes()))
         ####data = data.float().div(255).view(*im.size[::-1], len(im.mode))
-        ####self.write_overlay(data, res, id_) #Use only for visual debug on image augmentation an its label
+        ####V.write_overlay(data, res, id_, 'tmp_figs') #Use only for visual debug on image augmentation an its label
 
         return (res, img_info, file_name)
 

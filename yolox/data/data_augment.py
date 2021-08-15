@@ -9,16 +9,14 @@ The data augmentation procedures were interpreted from @weiliu89's SSD paper
 http://arxiv.org/abs/1512.02325
 """
 
-import cv2
-import numpy as np
-
-import torch
-
-from yolox.utils import xyxy2cxcywh
-
 import math
 import random
 
+import cv2
+import numpy as np
+
+from yolox.utils import xyxy2cxcywh
+import yolox.utils.boxes as B
 
 def augment_hsv(img, hgain=0.015, sgain=0.7, vgain=0.4):
     r = np.random.uniform(-1, 1, 3) * [hgain, sgain, vgain] + 1  # random gains
@@ -116,7 +114,9 @@ def random_perspective(
     if n:
         # warp points
         xy = np.ones((n * 4, 3))
-        xy[:, :2] = targets[:, [0, 1, 2, 3, 0, 3, 2, 1]].reshape(
+        pts4 = targets[:, [0, 1, 2, 3, 0, 3, 2, 1]]
+        ###pts4 = B.rotate_boxes(targets[:,:5])
+        xy[:, :2] = pts4.reshape(
             n * 4, 2
         )  # x1y1, x2y2, x1y2, x2y1
         xy = xy @ M.T  # transform
@@ -125,10 +125,16 @@ def random_perspective(
         else:  # affine
             xy = xy[:, :2].reshape(n, 8)
 
-        # create new boxes
+        ### create new boxes
         x = xy[:, [0, 2, 4, 6]]
         y = xy[:, [1, 3, 5, 7]]
         xy = np.concatenate((x.min(1), y.min(1), x.max(1), y.max(1))).reshape(4, n).T
+
+        ###rbboxes = []
+        ###for corners in xy:
+        ###    rbbox = B.corners2rotatedbbox(corners)
+        ###    rbboxes.append(rbbox)
+        ###xy = np.array(rbboxes)
 
         # clip boxes
         xy[:, [0, 2]] = xy[:, [0, 2]].clip(0, width)
@@ -138,6 +144,7 @@ def random_perspective(
         i = box_candidates(box1=targets[:, :4].T * s, box2=xy.T)
         targets = targets[i]
         targets[:, :4] = xy[i]
+        ##targets[:, :5] = xy[i]
 
     return img, targets
 
@@ -172,13 +179,14 @@ def _distort(image):
     return image
 
 
-def _mirror(image, boxes):
+def _mirror(image, boxes, rads):
     _, width, _ = image.shape
     if random.randrange(2):
         image = image[:, ::-1]
         boxes = boxes.copy()
         boxes[:, 0::2] = width - boxes[:, 2::-2]
-    return image, boxes
+        rads *= -1
+    return image, boxes, rads
 
 
 def preproc(image, input_size, mean, std, swap=(2, 0, 1)):
@@ -215,9 +223,10 @@ class TrainTransform:
 
     def __call__(self, image, targets, input_dim):
         boxes = targets[:, :4].copy()
-        labels = targets[:, 4].copy()
+        rads = targets[:, 4].copy()
+        labels = targets[:, 5].copy()
         if len(boxes) == 0:
-            targets = np.zeros((self.max_labels, 5), dtype=np.float32)
+            targets = np.zeros((self.max_labels, 6), dtype=np.float32)
             image, r_o = preproc(image, input_dim, self.means, self.std)
             image = np.ascontiguousarray(image, dtype=np.float32)
             return image, targets
@@ -226,12 +235,13 @@ class TrainTransform:
         targets_o = targets.copy()
         height_o, width_o, _ = image_o.shape
         boxes_o = targets_o[:, :4]
-        labels_o = targets_o[:, 4]
+        rads_o = targets_o[:, 4]
+        labels_o = targets_o[:, 5]
         # bbox_o: [xyxy] to [c_x,c_y,w,h]
         boxes_o = xyxy2cxcywh(boxes_o)
 
         image_t = _distort(image)
-        image_t, boxes = _mirror(image_t, boxes)
+        image_t, boxes, rads = _mirror(image_t, boxes, rads)
         height, width, _ = image_t.shape
         image_t, r_ = preproc(image_t, input_dim, self.means, self.std)
         # boxes [xyxy] 2 [cx,cy,w,h]
@@ -240,18 +250,21 @@ class TrainTransform:
 
         mask_b = np.minimum(boxes[:, 2], boxes[:, 3]) > 8
         boxes_t = boxes[mask_b]
+        rads_t = rads[mask_b]
         labels_t = labels[mask_b]
 
         if len(boxes_t) == 0:
             image_t, r_o = preproc(image_o, input_dim, self.means, self.std)
             boxes_o *= r_o
             boxes_t = boxes_o
+            rads_t = rads_o
             labels_t = labels_o
 
         labels_t = np.expand_dims(labels_t, 1)
-
-        targets_t = np.hstack((labels_t, boxes_t))
-        padded_labels = np.zeros((self.max_labels, 5))
+        rads_t = np.expand_dims(rads_t, 1)
+        
+        targets_t = np.hstack((labels_t, boxes_t, rads_t))
+        padded_labels = np.zeros((self.max_labels, 6))
         padded_labels[range(len(targets_t))[: self.max_labels]] = targets_t[
             : self.max_labels
         ]
@@ -286,4 +299,4 @@ class ValTransform:
     # assume input is cv2 img for now
     def __call__(self, img, res, input_size):
         img, _ = preproc(img, input_size, self.means, self.std, self.swap)
-        return img, np.zeros((1, 5))
+        return img, np.zeros((1, 6))
