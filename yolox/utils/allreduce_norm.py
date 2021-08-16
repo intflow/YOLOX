@@ -3,12 +3,12 @@
 # Copyright (c) 2019-2021 Intflow Inc. All rights reserved.
 # --Based on YOLOX made by Megavii Inc.--
 
+import pickle
+from collections import OrderedDict
+
 import torch
 from torch import distributed as dist
 from torch import nn
-
-import pickle
-from collections import OrderedDict
 
 from .dist import _get_global_gloo_group, get_world_size
 

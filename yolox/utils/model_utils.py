@@ -3,11 +3,11 @@
 # Copyright (c) 2019-2021 Intflow Inc. All rights reserved.
 # --Based on YOLOX made by Megavii Inc.--
 
+from copy import deepcopy
+
 import torch
 import torch.nn as nn
 from thop import profile
-
-from copy import deepcopy
 
 __all__ = [
     "fuse_conv_and_bn",

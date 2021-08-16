@@ -3,16 +3,16 @@
 # Copyright (c) 2019-2021 Intflow Inc. All rights reserved.
 # --Based on YOLOX made by Megavii Inc.--
 
+import ast
+import pprint
+from abc import ABCMeta, abstractmethod
+from typing import Dict
+from tabulate import tabulate
+
 import torch
 from torch.nn import Module
 
 from yolox.utils import LRScheduler
-
-import ast
-import pprint
-from abc import ABCMeta, abstractmethod
-from tabulate import tabulate
-from typing import Dict
 
 
 class BaseExp(metaclass=ABCMeta):

@@ -3,13 +3,15 @@
 # Copyright (c) 2019-2021 Intflow Inc. All rights reserved.
 # --Based on YOLOX made by Megavii Inc.--
 import numpy as np
-
 import torch
-
 import functools
 import os
 import time
 from collections import defaultdict, deque
+
+import numpy as np
+
+import torch
 
 __all__ = [
     "AverageMeter",

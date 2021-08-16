@@ -2,12 +2,11 @@
 # -*- coding:utf-8 -*-
 # Copyright (c) 2019-2021 Intflow Inc. All rights reserved.
 # --Based on YOLOX made by Megavii Inc.--
+import os
+import shutil
 from loguru import logger
 
 import torch
-
-import os
-import shutil
 
 
 def load_ckpt(model, ckpt):

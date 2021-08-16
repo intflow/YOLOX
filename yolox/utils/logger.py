@@ -3,11 +3,10 @@
 # Copyright (c) 2019-2021 Intflow Inc. All rights reserved.
 # --Based on YOLOX made by Megavii Inc.--
 
-from loguru import logger
-
 import inspect
 import os
 import sys
+from loguru import logger
 
 
 def get_caller_name(depth=0):
