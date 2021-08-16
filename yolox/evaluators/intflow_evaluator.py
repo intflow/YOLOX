@@ -154,7 +154,7 @@ class INTFLOWEvaluator:
             segments = rotate_boxes(torch.cat((bboxes,rads),dim=-1).numpy())
             bboxes = xyxy2xywh(bboxes)
             cls = output[:, 6]
-            scores = torch.sqrt(output[:, 4] * output[:, 5] + 1e-14)
+            scores = output[:, 4] * output[:, 5]
             for ind in range(bboxes.shape[0]):
                 label = self.dataloader.dataset.class_ids[int(cls[ind])]
                 pred_data = {
