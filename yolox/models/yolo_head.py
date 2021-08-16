@@ -43,7 +43,7 @@ class YOLOXHead(nn.Module):
         self.reg_convs = nn.ModuleList()
         self.cls_preds = nn.ModuleList()
         self.reg_preds = nn.ModuleList()
-        self.rad_preds = nn.ModuleList()
+        ##self.rad_preds = nn.ModuleList()
         self.obj_preds = nn.ModuleList()
         self.stems = nn.ModuleList()
         Conv = DWConv if depthwise else BaseConv
@@ -110,21 +110,21 @@ class YOLOXHead(nn.Module):
             self.reg_preds.append(
                 nn.Conv2d(
                     in_channels=int(256 * width),
-                    out_channels=4,
+                    out_channels=6,
                     kernel_size=1,
                     stride=1,
                     padding=0,
                 )
             )
-            self.rad_preds.append(
-                nn.Conv2d(
-                    in_channels=int(256 * width),
-                    out_channels=2,
-                    kernel_size=1,
-                    stride=1,
-                    padding=0,
-                )
-            )
+            ##self.rad_preds.append(
+            ##    nn.Conv2d(
+            ##        in_channels=int(256 * width),
+            ##        out_channels=2,
+            ##        kernel_size=1,
+            ##        stride=1,
+            ##        padding=0,
+            ##    )
+            ##)
             self.obj_preds.append(
                 nn.Conv2d(
                     in_channels=int(256 * width),
@@ -181,14 +181,14 @@ class YOLOXHead(nn.Module):
             cls_output = self.cls_preds[k](cls_feat)
 
             reg_feat = reg_conv(reg_x)
-            reg_output = self.reg_preds[k](reg_feat)
-            rad_output = self.rad_preds[k](reg_feat)
+            reg_output = self.reg_preds[k](reg_feat)[:,:4,:,:]
+            rad_output = self.reg_preds[k](reg_feat)[:,4:,:,:]
             obj_output = self.obj_preds[k](reg_feat)
 
             ##obj_output += cls_output.sum(dim=1, keepdim=True)
 
             if self.training:
-                output = torch.cat([reg_output, obj_output, cls_output, rad_output], 1)
+                output = torch.cat([reg_output, obj_output, cls_output, rad_output], 1) #4(cx_cy_rw,rh), 1, num_cls, 2 (sin,cos)
                 output, grid = self.get_output_and_grid(
                     output, k, stride_this_level, xin[0].type()
                 )
@@ -290,7 +290,7 @@ class YOLOXHead(nn.Module):
         bbox_preds = outputs[:, :, :4]  # [batch, n_anchors_all, 4]
         obj_preds = outputs[:, :, 4].unsqueeze(-1)  # [batch, n_anchors_all, 1]
         cls_preds = outputs[:, :, 5:5+self.num_classes]  # [batch, n_anchors_all, n_cls]
-        rad_preds = outputs[:, :, 5+self.num_classes:7+self.num_classes]  # [batch, n_anchors_all, n_cls]
+        rad_preds = outputs[:, :, 5+self.num_classes:7+self.num_classes]  # [batch, n_anchors_all, 2]
 
         # calculate targets
         mixup = labels.shape[2] > 6
