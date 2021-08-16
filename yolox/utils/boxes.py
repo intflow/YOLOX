@@ -70,7 +70,7 @@ def postprocess_nms(prediction, num_classes, conf_thre=0.7, nms_thre=0.45):
     return output
 
 
-def postprocess(prediction, num_classes, conf_thre=0.1):
+def postprocess(prediction, num_classes, conf_thre=0.7, nms_thre=0.45):
     box_corner = prediction.new(prediction.shape)
     box_corner[:, :, 0] = prediction[:, :, 0] - prediction[:, :, 2] / 2
     box_corner[:, :, 1] = prediction[:, :, 1] - prediction[:, :, 3] / 2
@@ -94,8 +94,14 @@ def postprocess(prediction, num_classes, conf_thre=0.1):
         detections = torch.cat((image_pred[:, :4], obj_conf, class_conf, class_pred.float(), rad), 1)
         detections = detections[conf_mask]
         if not detections.size(0):
-            continue
-
+            continue##
+        nms_out_index = torchvision.ops.batched_nms(
+            detections[:, :4],
+            torch.sqrt(detections[:, 4] * detections[:, 5] + 1e-14),
+            detections[:, 6],
+            nms_thre,
+        )
+        detections = detections[nms_out_index]
         if output[i] is None:
             output[i] = detections
         else:
@@ -229,8 +235,6 @@ def rotate_boxes(rbboxes):
 
         corners = np.matmul(R, (corners - cents).transpose(1, 0)).transpose(1, 0) + cents
 
-        #Reorder boxes x1y1, x2y2, x1y2, x2y1
-        corners = corners[[0,2,1,3]]
         corners_list.append(corners)
     corners_list = np.array(corners_list)
     return np.array(corners_list)

@@ -554,7 +554,7 @@ class YOLOXHead(nn.Module):
             gt_matched_classes,
             pred_ious_this_matching,
             matched_gt_inds,
-        ) = self.dynamic_k_matching(cost, pair_wise_ious, gt_classes, num_gt, fg_mask, K=1)
+        ) = self.dynamic_k_matching(cost, pair_wise_ious, gt_classes, num_gt, fg_mask, K=10)
         del pair_wise_cls_loss, cost, pair_wise_ious, pair_wise_ious_loss
 
         if mode == "cpu":

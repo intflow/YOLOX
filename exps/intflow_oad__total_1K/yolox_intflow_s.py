@@ -22,10 +22,10 @@ class Exp(MyExp):
         self.train_path = '/data/EdgeFarm_cow/intflow_total_1K'
         self.val_path = '/data/EdgeFarm_cow/intflow_total_1K'
         self.train_ann = "label_odtk_025pi_center.json"
-        self.val_ann = "label_coco_bbox.json"
+        self.val_ann = "label_odtk_025pi_center.json"
 
         # --------------- transform config ----------------- #
-        self.degrees = 10.0
+        self.degrees = 0.0
         self.translate = 0.1
         self.scale = (0.1, 2)
         self.mscale = (0.8, 1.6)
@@ -34,8 +34,8 @@ class Exp(MyExp):
         self.enable_mixup = True
 
         # --------------  training config --------------------- #
-        self.warmup_epochs = 5
-        self.max_epoch = 300
+        self.warmup_epochs = 1
+        self.max_epoch = 100
         self.warmup_lr = 0
         self.basic_lr_per_img = 0.01 / 64.0
         self.scheduler = "yoloxwarmcos"
@@ -46,12 +46,12 @@ class Exp(MyExp):
         self.weight_decay = 5e-4
         self.momentum = 0.9
         self.print_interval = 10
-        self.eval_interval = 999
+        self.eval_interval = 10
         self.exp_name = os.path.split(os.path.realpath(__file__))[1].split(".")[0]
 
         # -----------------  testing config ------------------ #
         self.test_size = (640, 640)
-        self.test_conf = 0.2
+        self.test_conf = 0.4
         self.nmsthre = 0.65
 
     def get_data_loader(self, batch_size, is_distributed, no_aug=False):
@@ -125,7 +125,7 @@ class Exp(MyExp):
             preproc=ValTransform(
                 rgb_means=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)
             ),
-            compatible_coco=True,
+            compatible_coco=False,
             rotation=False,
         )
 

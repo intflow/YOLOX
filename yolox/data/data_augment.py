@@ -264,6 +264,12 @@ class TrainTransform:
         rads_t = np.expand_dims(rads_t, 1)
         rads_t = np.concatenate((np.sin(rads_t), np.cos(rads_t)),axis=-1)
         
+        labels_t[labels_t<0] = 0.0
+        rads_t[rads_t==-1.0] += 1e-9
+        rads_t[rads_t==1.0] -= 1e-9
+
+        if sum(labels_t<0)[0] > 1 or sum(labels_t>1)[0] > 1:
+            print('abnormal label detected')
         targets_t = np.hstack((labels_t, boxes_t, rads_t))
         padded_labels = np.zeros((self.max_labels, 7))
         padded_labels[range(len(targets_t))[: self.max_labels]] = targets_t[

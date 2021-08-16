@@ -13,7 +13,8 @@ from yolox.utils import (
     postprocess,
     synchronize,
     time_synchronized,
-    xyxy2xywh
+    xyxy2xywh,
+    rotate_boxes
 )
 
 import contextlib
@@ -142,17 +143,18 @@ class INTFLOWEvaluator:
                 continue
             output = output.cpu()
 
-            bboxes = output[:, 0:4]
-
             # preprocessing: resize
             scale = min(
                 self.img_size[0] / float(img_h), self.img_size[1] / float(img_w)
             )
-            bboxes /= scale
-            bboxes = xyxy2xywh(bboxes)
 
+            bboxes = output[:, 0:4]
+            bboxes /= scale
+            rads = output[:, -1].unsqueeze(-1)
+            segments = rotate_boxes(torch.cat((bboxes,rads),dim=-1).numpy())
+            bboxes = xyxy2xywh(bboxes)
             cls = output[:, 6]
-            scores = output[:, 4] * output[:, 5]
+            scores = torch.sqrt(output[:, 4] * output[:, 5] + 1e-14)
             for ind in range(bboxes.shape[0]):
                 label = self.dataloader.dataset.class_ids[int(cls[ind])]
                 pred_data = {
@@ -160,7 +162,7 @@ class INTFLOWEvaluator:
                     "category_id": label,
                     "bbox": bboxes[ind].numpy().tolist(),
                     "score": scores[ind].numpy().item(),
-                    "segmentation": [],
+                    "segmentation": [segments[ind].reshape(-1).tolist(),]
                 }  # COCO json format
                 data_list.append(pred_data)
         return data_list
@@ -210,7 +212,7 @@ class INTFLOWEvaluator:
 
                 logger.warning("Use standard COCOeval.")
 
-            cocoEval = COCOeval(cocoGt, cocoDt, annType[1])
+            cocoEval = COCOeval(cocoGt, cocoDt, annType[0])
             cocoEval.evaluate()
             cocoEval.accumulate()
             redirect_string = io.StringIO()
