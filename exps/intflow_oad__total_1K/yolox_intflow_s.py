@@ -22,7 +22,7 @@ class Exp(MyExp):
         self.train_path = '/data/EdgeFarm_cow/intflow_total_1K'
         self.val_path = '/data/EdgeFarm_cow/intflow_total_1K'
         self.train_ann = "label_odtk_025pi_center.json"
-        self.val_ann = "label_odtk_025pi_center.json"
+        self.val_ann = "label_coco_rbbox.json"
 
         # --------------- transform config ----------------- #
         self.degrees = 0.0
@@ -51,7 +51,7 @@ class Exp(MyExp):
 
         # -----------------  testing config ------------------ #
         self.test_size = (640, 640)
-        self.test_conf = 0.4
+        self.test_conf = 0.6
         self.nmsthre = 0.65
 
     def get_data_loader(self, batch_size, is_distributed, no_aug=False):
@@ -125,7 +125,7 @@ class Exp(MyExp):
             preproc=ValTransform(
                 rgb_means=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)
             ),
-            compatible_coco=False,
+            compatible_coco=True,
             rotation=False,
         )
 

@@ -17,7 +17,7 @@ root = '/data/EdgeFarm_cow/intflow_total_1K'
 #root = '/data/EdgeFarm_cow/intflow_total_1K'
 img_folder_path = os.path.join(root, 'img_mask')
 train_label_path = os.path.join(root, 'label')
-train_label_merge_out = os.path.join(root, 'label_coco_bbox.json')
+train_label_merge_out = os.path.join(root, 'label_coco_rbbox.json')
 
 mode = 1   #  0:train_data,   1:validation_data
 
@@ -175,7 +175,8 @@ for num1, each_file in enumerate(tqdm.tqdm(json_list)):
 
 
         ## Convert intflow's rbbox format into coco bbox format
-        x1,y1,x2,y2 = B.rotated2rect([cx,cy,width,height,radian], w_img, h_img)
+        #x1,y1,x2,y2 = B.rotated2rect([cx,cy,width,height,radian], w_img, h_img)
+        x1,y1,x2,y2,rad = B.rotated_reform([cx,cy,width,height,radian], w_img, h_img)
         width = x2 - x1
         height = y2 - y1
 

@@ -108,31 +108,21 @@ class YOLOXHead(nn.Module):
                 )
             )
             self.reg_preds.append(
-                nn.Sequential(
-                    *[
-                        nn.Conv2d(
-                            in_channels=int(256 * width),
-                            out_channels=4,
-                            kernel_size=1,
-                            stride=1,
-                            padding=0,
-                        ),
-                        nn.ReLU()
-                    ]
+                nn.Conv2d(
+                    in_channels=int(256 * width),
+                    out_channels=4,
+                    kernel_size=1,
+                    stride=1,
+                    padding=0,
                 )
             )
             self.rad_preds.append(
-                nn.Sequential(
-                    *[
-                        nn.Conv2d(
-                            in_channels=int(256 * width),
-                            out_channels=2,
-                            kernel_size=1,
-                            stride=1,
-                            padding=0,
-                        ),
-                        nn.Tanh()
-                    ]
+                nn.Conv2d(
+                    in_channels=int(256 * width),
+                    out_channels=2,
+                    kernel_size=1,
+                    stride=1,
+                    padding=0,
                 )
             )
             self.obj_preds.append(
@@ -554,7 +544,7 @@ class YOLOXHead(nn.Module):
             gt_matched_classes,
             pred_ious_this_matching,
             matched_gt_inds,
-        ) = self.dynamic_k_matching(cost, pair_wise_ious, gt_classes, num_gt, fg_mask, K=10)
+        ) = self.dynamic_k_matching(cost, pair_wise_ious, gt_classes, num_gt, fg_mask, K=1)
         del pair_wise_cls_loss, cost, pair_wise_ious, pair_wise_ious_loss
 
         if mode == "cpu":

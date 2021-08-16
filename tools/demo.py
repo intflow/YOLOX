@@ -46,15 +46,15 @@ def make_parser():
         type=str,
         help="pls input your expriment description file",
     )
-    parser.add_argument("-c", "--ckpt", default="YOLOX_outputs/yolox_oad_e2e_s-intflow_total_1K/latest_ckpt.pth", type=str, help="ckpt for eval")
+    parser.add_argument("-c", "--ckpt", default="YOLOX_outputs/yolox_oad_e2e_s-intflow_total_1K/best_ckpt.pth", type=str, help="ckpt for eval")
     parser.add_argument(
         "--device",
         default="gpu",
         type=str,
         help="device to run our model, can either be cpu or gpu",
     )
-    parser.add_argument("--conf", default=0.5, type=float, help="test conf")
-    parser.add_argument("--nms", default=0.45, type=float, help="test nms threshold")
+    parser.add_argument("--conf", default=0.6, type=float, help="test conf")
+    parser.add_argument("--nms", default=0.65, type=float, help="test nms threshold")
     parser.add_argument("--tsize", default=640, type=int, help="test img size")
     parser.add_argument(
         "--fp16",
