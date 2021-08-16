@@ -212,7 +212,7 @@ class INTFLOWEvaluator:
 
                 logger.warning("Use standard COCOeval.")
 
-            cocoEval = COCOeval(cocoGt, cocoDt, annType[0])
+            cocoEval = COCOeval(cocoGt, cocoDt, annType[1])
             cocoEval.evaluate()
             cocoEval.accumulate()
             redirect_string = io.StringIO()
