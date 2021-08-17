@@ -35,23 +35,23 @@ class Exp(MyExp):
 
         # --------------  training config --------------------- #
         self.warmup_epochs = 1
-        self.max_epoch = 100
+        self.max_epoch = 300
         self.warmup_lr = 0
         self.basic_lr_per_img = 0.01 / 64.0
         self.scheduler = "yoloxwarmcos"
-        self.no_aug_epochs = 15
+        self.no_aug_epochs = 50
         self.min_lr_ratio = 0.05
         self.ema = True
 
         self.weight_decay = 5e-4
         self.momentum = 0.9
         self.print_interval = 10
-        self.eval_interval = 10
+        self.eval_interval = 100
         self.exp_name = os.path.split(os.path.realpath(__file__))[1].split(".")[0]
 
         # -----------------  testing config ------------------ #
         self.test_size = (640, 640)
-        self.test_conf = 0.2
+        self.test_conf = 0.5
         self.nmsthre = 0.65
 
     def get_data_loader(self, batch_size, is_distributed, no_aug=False):
