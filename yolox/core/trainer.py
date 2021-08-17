@@ -98,7 +98,8 @@ class Trainer:
 
         outputs = self.model(inps, targets)
         loss = outputs["total_loss"]
-
+        if loss < 0.0:
+            logger.info("Negative loss detected... skip training")
         self.optimizer.zero_grad()
         if self.amp_training:
             with amp.scale_loss(loss, self.optimizer) as scaled_loss:
