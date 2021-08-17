@@ -76,7 +76,7 @@ class IOUloss(nn.Module):
 
     def forward(self, pred, target):
         assert pred.shape[0] == target.shape[0]
-
+        
         pred = pred.view(-1, 4)
         target = target.view(-1, 4)
         tl = torch.max(
