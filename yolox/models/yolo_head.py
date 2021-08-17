@@ -142,7 +142,7 @@ class YOLOXHead(nn.Module):
                                                 balance_param=0.25,
                                                 reduction="none")
         self.bcewithlog_loss = nn.BCEWithLogitsLoss(reduction="none")
-        self.iou_loss = RIOUloss(reduction="none")
+        self.iou_loss = IOUloss(reduction="none")
         self.strides = strides
         self.grids = [torch.zeros(1)] * len(in_channels)
 
