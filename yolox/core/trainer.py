@@ -82,12 +82,13 @@ class Trainer:
             self.after_epoch()
 
     def train_in_iter(self):
+        loss_prev = 9999.0
         for self.iter in range(self.max_iter):
             self.before_iter()
-            self.train_one_iter()
+            loss_prev = self.train_one_iter(loss_prev)
             self.after_iter()
 
-    def train_one_iter(self):
+    def train_one_iter(self, loss_prev):
         iter_start_time = time.time()
 
         inps, targets = self.prefetcher.next()
@@ -98,8 +99,10 @@ class Trainer:
 
         outputs = self.model(inps, targets)
         loss = outputs["total_loss"]
-        if loss < 0.0:
-            logger.info("Negative loss detected... skip training")
+        if loss < 0.0 or loss > 2.0 * loss_prev:
+            logger.info("Abnormal loss detected! skip training...")
+            return loss_prev
+
         self.optimizer.zero_grad()
         if self.amp_training:
             with amp.scale_loss(loss, self.optimizer) as scaled_loss:
@@ -122,6 +125,7 @@ class Trainer:
             lr=lr,
             **outputs,
         )
+        return loss_prev
 
     def before_train(self):
         logger.info("args: {}".format(self.args))
