@@ -24,7 +24,7 @@ def make_parser():
     parser.add_argument(
         "--demo", default="image", help="demo type, eg. image, video and webcam"
     )
-    parser.add_argument("-expn", "--experiment-name", type=str, default="yolox_oad_e2e_s-intflow_total_100K_2")
+    parser.add_argument("-expn", "--experiment-name", type=str, default="yolox_oad_e2e_s-intflow_total_1K")
     parser.add_argument("-n", "--name", type=str, default="yolox_oad_e2e_s", help="model name")
 
     parser.add_argument(
@@ -42,7 +42,7 @@ def make_parser():
     parser.add_argument(
         "-f",
         "--exp_file",
-        default="exps/intflow_oad__total_1K/yolox_intflow_s.py",
+        default="exps/intflow_oad__total_100K_2/yolox_intflow_s.py",
         type=str,
         help="pls input your expriment description file",
     )
