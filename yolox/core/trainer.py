@@ -99,7 +99,7 @@ class Trainer:
 
         outputs = self.model(inps, targets)
         loss = outputs["total_loss"]
-        if loss < 0.0 or loss > 2.0 * loss_prev:
+        if loss < 0.0 or loss > 1.2 * loss_prev:
             logger.info("Abnormal loss detected! skip training...")
             return loss_prev
 
