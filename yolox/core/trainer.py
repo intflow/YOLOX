@@ -102,22 +102,26 @@ class Trainer:
         loss = outputs["total_loss"]
         self.optimizer.zero_grad()
 
+        if self.amp_training:
+            with amp.scale_loss(loss, self.optimizer) as scaled_loss:
+                scaled_loss.backward()
+        else:
+            loss.backward()
+
 
         if loss.item() < 0.0 or loss.item() > 1.2 * loss_prev:
             logger.info("Loss is diverging! skip training...")
+            #print(("Loss is diverging! skip training... loss_prv: {}".format(loss_prev)))
             self.optimizer.zero_grad()
-            #return loss_prev
         else:
-            if self.amp_training:
-                with amp.scale_loss(loss, self.optimizer) as scaled_loss:
-                    scaled_loss.backward()
-            else:
-                loss.backward()
+            loss_prev = loss.item()
             self.optimizer.step()
-            if self.use_model_ema:
-                self.ema_model.update(self.model)
+
+        if self.use_model_ema:
+            self.ema_model.update(self.model)
 
         lr = self.lr_scheduler.update_lr(self.progress_in_iter + 1)
+
         for param_group in self.optimizer.param_groups:
             param_group["lr"] = lr
 
@@ -128,7 +132,6 @@ class Trainer:
             lr=lr,
             **outputs,
         )
-        loss_prev = loss.item()
         return loss_prev
 
     def before_train(self):
