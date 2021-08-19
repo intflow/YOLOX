@@ -19,7 +19,7 @@ from yolox.utils import configure_nccl, fuse_model, get_local_rank, get_model_in
 
 def make_parser():
     parser = argparse.ArgumentParser("YOLOX Eval")
-    parser.add_argument("-expn", "--experiment-name", type=str, default="yolox_oad_e2e_s-intflow_total_100K_2")
+    parser.add_argument("-expn", "--experiment-name", type=str, default="yolox_oad_e2e_s-intflow_total_1K")
     parser.add_argument("-n", "--name", type=str, default="yolox_oad_e2e_s", help="model name")
 
     # distributed
@@ -50,7 +50,7 @@ def make_parser():
         help="pls input your expriment description file",
     )
     parser.add_argument("-c", "--ckpt", default="YOLOX_outputs/yolox_oad_e2e_s-intflow_total_1K/best_ckpt.pth", type=str, help="ckpt for eval")
-    parser.add_argument("--conf", default=0.4, type=float, help="test conf")
+    parser.add_argument("--conf", default=0.5, type=float, help="test conf")
     parser.add_argument("--nms", default=0.65, type=float, help="test nms threshold")
     parser.add_argument("--tsize", default=640, type=int, help="test img size")
     parser.add_argument("--seed", default=None, type=int, help="eval seed")

@@ -85,7 +85,8 @@ class Trainer:
         loss_prev = 9999.0
         for self.iter in range(self.max_iter):
             self.before_iter()
-            loss_prev = self.train_one_iter(loss_prev)
+            loss_prev = self.train_one_iter(loss_prev) 
+            #print(loss_prev)
             self.after_iter()
 
     def train_one_iter(self, loss_prev):
@@ -99,10 +100,11 @@ class Trainer:
 
         outputs = self.model(inps, targets)
         loss = outputs["total_loss"]
-        if loss < 0.0 or loss > 1.2 * loss_prev:
-            logger.info("Abnormal loss detected! skip training...")
-            return loss_prev
-
+        if loss.item() < 0.0 or loss > 1.2 * loss_prev:
+            logger.info("Loss is diverging! skip training...")
+            #return loss_prev
+        
+        loss_prev = loss.item()
         self.optimizer.zero_grad()
         if self.amp_training:
             with amp.scale_loss(loss, self.optimizer) as scaled_loss:
@@ -110,7 +112,6 @@ class Trainer:
         else:
             loss.backward()
         self.optimizer.step()
-
         if self.use_model_ema:
             self.ema_model.update(self.model)
 

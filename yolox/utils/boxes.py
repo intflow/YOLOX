@@ -212,20 +212,14 @@ def rotate_boxes(rbboxes):
 
     corners_list = []
     for rbbox in rbboxes:
-        x1, y1, x2, y2, rad = rbbox
+        xmin, ymin, width, height, rad = rbbox
 
-        xmin = x1
-        ymin = y1
-        width = np.max((0.0, x2 - x1))
-        height = np.max((0.0, y2 - y1))
-        cx = xmin + width/2
-        cy = ymin + height/2
         xy1 = xmin, ymin
-        xy2 = xmin, ymin + height
-        xy3 = xmin + width, ymin + height
-        xy4 = xmin + width, ymin
+        xy2 = xmin, ymin + height - 1
+        xy3 = xmin + width - 1, ymin + height - 1
+        xy4 = xmin + width - 1, ymin
 
-        cents = np.array([cx, cy])
+        cents = np.array([xmin + (width - 1) / 2, ymin + (height - 1) / 2])
 
         corners = np.stack([xy1, xy2, xy3, xy4])
 

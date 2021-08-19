@@ -151,8 +151,8 @@ class INTFLOWEvaluator:
             bboxes = output[:, 0:4]
             bboxes /= scale
             rads = output[:, -1].unsqueeze(-1)
-            segments = rotate_boxes(torch.cat((bboxes,rads),dim=-1).numpy())
             bboxes = xyxy2xywh(bboxes)
+            segments = rotate_boxes(torch.cat((bboxes,rads),dim=-1).numpy())
             cls = output[:, 6]
             scores = output[:, 4] * output[:, 5]
             for ind in range(bboxes.shape[0]):
@@ -212,7 +212,7 @@ class INTFLOWEvaluator:
 
                 logger.warning("Use standard COCOeval.")
 
-            cocoEval = COCOeval(cocoGt, cocoDt, annType[1])
+            cocoEval = COCOeval(cocoGt, cocoDt, annType[0])
             cocoEval.evaluate()
             cocoEval.accumulate()
             redirect_string = io.StringIO()
