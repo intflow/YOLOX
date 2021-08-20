@@ -425,9 +425,10 @@ class YOLOXHead(nn.Module):
             l1_targets = torch.cat(l1_targets, 0)
 
         num_fg = max(num_fg, 1)
-        loss_iou = (
-            self.iou_loss(torch.cat((bbox_preds,rad_preds),dim=-1).view(-1, 6)[fg_masks], torch.cat((reg_targets,rad_targets),dim=-1))
-        ).sum() / num_fg
+        with torch.cuda.amp.autocast(enabled=False):
+            loss_iou = (
+                self.iou_loss(torch.cat((bbox_preds,rad_preds),dim=-1).float().view(-1, 6)[fg_masks], torch.cat((reg_targets,rad_targets),dim=-1).float())
+            ).sum() / num_fg
         loss_rad = (
             self.l1_loss(rad_preds.view(-1, 2)[fg_masks], rad_targets)
         ).sum() / num_fg
@@ -457,7 +458,7 @@ class YOLOXHead(nn.Module):
             num_fg / max(num_gts, 1),
         )
 
-    def get_l1_target(self, l1_target, gt, stride, x_shifts, y_shifts, eps=1e-8):
+    def get_l1_target(self, l1_target, gt, stride, x_shifts, y_shifts, eps=1e-6):
         l1_target[:, 0] = gt[:, 0] / stride - x_shifts
         l1_target[:, 1] = gt[:, 1] / stride - y_shifts
         l1_target[:, 2] = torch.log(gt[:, 2] / stride + eps)
@@ -519,7 +520,7 @@ class YOLOXHead(nn.Module):
             .unsqueeze(1)
             .repeat(1, num_in_boxes_anchor, 1)
         )
-        pair_wise_ious_loss = -torch.log(pair_wise_ious + 1e-8)
+        pair_wise_ious_loss = -torch.log(pair_wise_ious + 1e-6)
 
         if mode == "cpu":
             cls_preds_, obj_preds_ = cls_preds_.cpu(), obj_preds_.cpu()
@@ -529,10 +530,11 @@ class YOLOXHead(nn.Module):
                 cls_preds_.float().unsqueeze(0).repeat(num_gt, 1, 1).sigmoid_()
                 * obj_preds_.unsqueeze(0).repeat(num_gt, 1, 1).sigmoid_()
             )
+            obj_preds_ += 1e-8
             pair_wise_cls_loss = F.binary_cross_entropy(
                 cls_preds_.sqrt_(), gt_cls_per_image, reduction="none"
             ).sum(-1)
-        del cls_preds_
+        del cls_preds_, obj_preds_
 
         cost = (
             10.0 * pair_wise_cls_loss

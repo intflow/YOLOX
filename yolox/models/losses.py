@@ -24,10 +24,10 @@ class RIOUloss(nn.Module):
         _target = torch.cat((target[:,:4],rad_target),dim=-1)
         _pred = _pred.view(1,-1, 5)
         _target = _target.view(1,-1, 5)
-
+        
         if self.loss_type == "iou": #defualt as DIoU
             loss, _ = cal_diou(_pred, _target)
-        elif self.loss_type == "diou":
+        elif self.loss_type == "giou":
             loss, _ = cal_giou(_pred, _target)
 
         #tl = torch.max(

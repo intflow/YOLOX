@@ -51,7 +51,7 @@ def postprocess_nms(prediction, num_classes, conf_thre=0.7, nms_thre=0.45):
             continue
         # Get score and class with highest confidence
         class_conf, class_pred = torch.max(image_pred[:, 6 : 6 + num_classes], 1, keepdim=True)
-        conf_mask = (torch.sqrt(image_pred[:, 5] * class_conf.squeeze() + 1e-14) >= conf_thre).squeeze()
+        conf_mask = (torch.sqrt(image_pred[:, 5] * class_conf.squeeze() + 1e-6) >= conf_thre).squeeze()
         detections = torch.cat((image_pred[:, :6], class_conf, class_pred.float()), 1)
         detections = detections[conf_mask]
         if not detections.size(0):
@@ -90,7 +90,7 @@ def postprocess(prediction, num_classes, conf_thre=0.7, nms_thre=0.45):
         rad_sin = image_pred[:,  -2].unsqueeze(-1)
         rad_cos = image_pred[:,  -1].unsqueeze(-1)
         rad = torch.atan2(rad_sin,rad_cos)
-        conf_mask = (torch.sqrt(obj_conf.squeeze() * class_conf.squeeze() + 1e-14) >= conf_thre).squeeze()
+        conf_mask = (torch.sqrt(obj_conf.squeeze() * class_conf.squeeze() + 1e-6) >= conf_thre).squeeze()
         detections = torch.cat((image_pred[:, :4], obj_conf, class_conf, class_pred.float(), rad), 1)
         detections = detections[conf_mask]
         if not detections.size(0):
