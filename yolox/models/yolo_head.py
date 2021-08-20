@@ -530,7 +530,9 @@ class YOLOXHead(nn.Module):
                 cls_preds_.float().unsqueeze(0).repeat(num_gt, 1, 1).sigmoid_()
                 * obj_preds_.unsqueeze(0).repeat(num_gt, 1, 1).sigmoid_()
             )
-            obj_preds_ += 1e-8
+            cls_preds_ = cls_preds_.clamp(0, 1)
+            cls_preds_[cls_preds_!=cls_preds_] = 0 # or 1 depending on your model's need
+            cls_preds_ += 1e-8
             pair_wise_cls_loss = F.binary_cross_entropy(
                 cls_preds_.sqrt_(), gt_cls_per_image, reduction="none"
             ).sum(-1)
