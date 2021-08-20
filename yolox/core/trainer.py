@@ -110,7 +110,7 @@ class Trainer:
 
 
         if loss.item() < 0.0 or loss.item() > 1.2 * loss_prev:
-            logger.info("Loss is diverging! skip training...")
+            #logger.info("Loss is diverging! skip training...")
             #print(("Loss is diverging! skip training... loss_prv: {}".format(loss_prev)))
             self.optimizer.zero_grad()
         else:
