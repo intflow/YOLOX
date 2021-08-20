@@ -54,7 +54,7 @@ class Exp(MyExp):
         self.test_conf = 0.5
         self.nmsthre = 0.65
 
-    def get_data_loader(self, batch_size, is_distributed, no_aug=False):
+    def get_data_loader(self, batch_size, is_distributed, no_aug=False, cache_img=False):
         from yolox.data.datasets.intflow import INTFLOWDataset
         from yolox.data.datasets.mosaicdetection import MosaicDetection
         from yolox.data.data_augment import TrainTransform
@@ -67,11 +67,7 @@ class Exp(MyExp):
                 json_file=self.train_ann,
                 name="img_mask",
                 img_size=self.input_size,
-                preproc=TrainTransform(
-                    rgb_means=(0.485, 0.456, 0.406),
-                    std=(0.229, 0.224, 0.225),
-                    max_labels=50
-                ),
+                preproc=TrainTransform(max_labels=50),
                 rotation=True,
                 compatible_coco=False,
         )
@@ -80,11 +76,7 @@ class Exp(MyExp):
             dataset,
             mosaic=not no_aug,
             img_size=self.input_size,
-            preproc=TrainTransform(
-                rgb_means=(0.485, 0.456, 0.406),
-                std=(0.229, 0.224, 0.225),
-                max_labels=120
-            ),
+            preproc=TrainTransform(max_labels=120),
             degrees=self.degrees,
             translate=self.translate,
             scale=self.scale,
@@ -104,7 +96,6 @@ class Exp(MyExp):
             sampler=sampler,
             batch_size=batch_size,
             drop_last=False,
-            input_dimension=self.input_size,
             mosaic=not no_aug
         )
 
@@ -122,9 +113,7 @@ class Exp(MyExp):
             json_file=self.val_ann,
             name="img_mask",
             img_size=self.input_size,
-            preproc=ValTransform(
-                rgb_means=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)
-            ),
+            preproc=ValTransform(),
             compatible_coco=True,
             rotation=False,
         )

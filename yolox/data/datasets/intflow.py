@@ -29,7 +29,8 @@ class INTFLOWDataset(Dataset):
         img_size=(416, 416),
         preproc=None,
         rotation=True,
-        compatible_coco=False
+        compatible_coco=False,
+        cache=False,
     ):
         """
         INTFLOW dataset initialization. Annotation data are read into memory by COCO API.
@@ -56,6 +57,8 @@ class INTFLOWDataset(Dataset):
         cats = self.coco.loadCats(self.coco.getCatIds())
         self._classes = tuple([c["name"] for c in cats])
         self.annotations = self._load_intflow_annotations()
+        if cache:
+            self._cache_images()
 
     def __len__(self):
         return len(self.ids)
@@ -69,6 +72,53 @@ class INTFLOWDataset(Dataset):
             annots = [self.load_anno_from_ids_bbox(_ids) for _ids in self.ids]
 
         return annots
+
+    def _cache_images(self):
+        logger.warning(
+            "\n********************************************************************************\n"
+            "You are using cached images in RAM to accelerate training.\n"
+            "This requires large system RAM.\n"
+            "Make sure you have 200G+ RAM and 136G available disk space for training COCO.\n"
+            "********************************************************************************\n"
+        )
+        max_h = self.img_size[0]
+        max_w = self.img_size[1]
+        cache_file = self.data_dir + "/img_resized_cache_" + self.name + ".array"
+        if not os.path.exists(cache_file):
+            logger.info(
+                "Caching images for the frist time. This might take about 20 minutes for COCO"
+            )
+            self.imgs = np.memmap(
+                cache_file,
+                shape=(len(self.ids), max_h, max_w, 3),
+                dtype=np.uint8,
+                mode="w+",
+            )
+            from tqdm import tqdm
+            from multiprocessing.pool import ThreadPool
+
+            NUM_THREADs = min(8, os.cpu_count())
+            loaded_images = ThreadPool(NUM_THREADs).imap(
+                lambda x: self.load_resized_img(x),
+                range(len(self.annotations)),
+            )
+            pbar = tqdm(enumerate(loaded_images), total=len(self.annotations))
+            for k, out in pbar:
+                self.imgs[k][: out.shape[0], : out.shape[1], :] = out.copy()
+            self.imgs.flush()
+            pbar.close()
+        else:
+            logger.warning(
+                "You are using cached imgs! Make sure your dataset is not changed!!"
+            )
+
+        logger.info("Loading cached imgs...")
+        self.imgs = np.memmap(
+            cache_file,
+            shape=(len(self.ids), max_h, max_w, 3),
+            dtype=np.uint8,
+            mode="r+",
+        )
 
     def load_anno_from_ids_rbbox(self, id_):
         im_ann = self.coco.loadImgs(id_)[0]
@@ -201,7 +251,7 @@ class INTFLOWDataset(Dataset):
 
         return img, res.copy(), img_info, np.array([id_])
 
-    @Dataset.resize_getitem
+    @Dataset.mosaic_getitem
     def __getitem__(self, index):
         """
         One image / label pair for the given index is picked up and pre-processed.
