@@ -82,14 +82,12 @@ class Trainer:
             self.after_epoch()
 
     def train_in_iter(self):
-        loss_prev = 9999.0
         for self.iter in range(self.max_iter):
             self.before_iter()
-            loss_prev = self.train_one_iter(loss_prev) 
-            #print(loss_prev)
+            self.train_one_iter()
             self.after_iter()
 
-    def train_one_iter(self, loss_prev):
+    def train_one_iter(self):
         iter_start_time = time.time()
 
         inps, targets = self.prefetcher.next()
@@ -100,28 +98,19 @@ class Trainer:
 
         outputs = self.model(inps, targets)
         loss = outputs["total_loss"]
-        self.optimizer.zero_grad()
 
+        self.optimizer.zero_grad()
         if self.amp_training:
             with amp.scale_loss(loss, self.optimizer) as scaled_loss:
                 scaled_loss.backward()
         else:
             loss.backward()
-
-
-        if loss.item() < 0.0 or loss.item() > 1.2 * loss_prev:
-            #logger.info("Loss is diverging! skip training...")
-            #print(("Loss is diverging! skip training... loss_prv: {}".format(loss_prev)))
-            self.optimizer.zero_grad()
-        else:
-            loss_prev = loss.item()
-            self.optimizer.step()
+        self.optimizer.step()
 
         if self.use_model_ema:
             self.ema_model.update(self.model)
 
         lr = self.lr_scheduler.update_lr(self.progress_in_iter + 1)
-
         for param_group in self.optimizer.param_groups:
             param_group["lr"] = lr
 
@@ -132,7 +121,6 @@ class Trainer:
             lr=lr,
             **outputs,
         )
-        return loss_prev
 
     def before_train(self):
         logger.info("args: {}".format(self.args))

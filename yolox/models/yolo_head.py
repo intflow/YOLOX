@@ -138,7 +138,7 @@ class YOLOXHead(nn.Module):
         self.use_l1 = False
         self.l1_loss = nn.L1Loss(reduction="none")
         self.focalbce_loss = MultiClassBCELoss(use_focal_weights=True,
-                                                focus_param=5,
+                                                focus_param=2,
                                                 balance_param=0.25,
                                                 reduction="none")
         self.bcewithlog_loss = nn.BCEWithLogitsLoss(reduction="none")

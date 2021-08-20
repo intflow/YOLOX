@@ -134,10 +134,10 @@ class MultiClassBCELoss(nn.Module):
     def forward(self,
                 outputs,
                 targets):
-        # inputs and targets are assumed to be BatchxClasses
-        assert len(outputs.shape) == len(targets.shape)
-        assert outputs.size(0) == targets.size(0)
-        assert outputs.size(1) == targets.size(1)
+        ### inputs and targets are assumed to be BatchxClasses
+        ##assert len(outputs.shape) == len(targets.shape)
+        ##assert outputs.size(0) == targets.size(0)
+        ##assert outputs.size(1) == targets.size(1)
         
         ## weights are assumed to be BatchxClasses
         #assert outputs.size(0) == weights.size(0)
@@ -147,12 +147,14 @@ class MultiClassBCELoss(nn.Module):
         #    bce_loss = F.binary_cross_entropy_with_logits(input=outputs,
         #                                                  target=targets)            
         #else:
+        outputs = outputs.clamp(0,1)
+        outputs[outputs!=outputs] = 0
         bce_loss = self.nll_loss(input=outputs,
                                  target=targets)
         
         if self.use_focal_weights:
             logpt = - bce_loss
-            pt    = torch.exp(logpt)
+            pt    = torch.exp(logpt+1e-9)
 
             focal_loss = -((1 - pt) ** self.focus_param) * logpt
             balanced_focal_loss = self.balance_param * focal_loss
