@@ -30,7 +30,7 @@ def make_parser():
         type=str,
         help="url used to set up distributed training",
     )
-    parser.add_argument("-b", "--batch-size", type=int, default=16, help="batch size")
+    parser.add_argument("-b", "--batch-size", type=int, default=32, help="batch size")
     parser.add_argument(
         "-d", "--devices", default=4, type=int, help="device for training"
     )
@@ -71,7 +71,7 @@ def make_parser():
     parser.add_argument(
         "--cache",
         dest="cache",
-        default=False,
+        default=True,
         action="store_true",
         help="Caching imgs to RAM for fast training.",
     )
