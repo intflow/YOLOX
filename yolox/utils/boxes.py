@@ -149,10 +149,11 @@ def rbboxes_iou(target, pred, iou_type="diou", calc_type="smallest"):
     _pred = torch.ones((n,5)).to(_pred.device)[:,None,:] * _pred
     
     if iou_type == "diou": #defualt as DIoU
-        loss, iou = cal_diou(_pred, _target,calc_type)
+        loss, iou = cal_diou(_pred, _target, calc_type)
     elif iou_type == "giou":
-        loss, iou = cal_giou(_pred, _target,calc_type)
+        loss, iou = cal_giou(_pred, _target, calc_type)
 
+    del _pred, _target, loss
     return iou
 
 
