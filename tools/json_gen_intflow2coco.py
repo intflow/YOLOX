@@ -118,8 +118,6 @@ for num1, each_file in enumerate(tqdm.tqdm(json_list)):
         l3_x = _nz(each_annos['hip_x'])
         l3_y = _nz(each_annos['hip_y'])
 
-        seg = B.rotate_box([cx, cy, width, height, radian])
-
         xmin = _nz(cx - 0.5*width)
         ymin = _nz(cy - 0.5*height)
 
@@ -131,6 +129,7 @@ for num1, each_file in enumerate(tqdm.tqdm(json_list)):
         
         #refine rotation angle
         radian *= -1
+        seg = B.rotate_box([cx, cy, width, height, radian])
 
         #0 ~ 2pi
         if radian > np.pi*2:

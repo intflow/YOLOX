@@ -105,7 +105,7 @@ class Exp(MyExp):
 
         return train_loader
 
-    def get_eval_loader(self, batch_size, is_distributed, testdev=False):
+    def get_eval_loader(self, batch_size, is_distributed, testdev=False, legacy=False):
         from yolox.data import INTFLOWDataset, ValTransform
 
         valdataset = INTFLOWDataset(
@@ -113,7 +113,7 @@ class Exp(MyExp):
             json_file=self.val_ann,
             name="img_mask",
             img_size=self.input_size,
-            preproc=ValTransform(),
+            preproc=ValTransform(legacy=legacy),
             compatible_coco=True,
             rotation=False,
         )
@@ -136,10 +136,10 @@ class Exp(MyExp):
 
         return val_loader
 
-    def get_evaluator(self, batch_size, is_distributed, testdev=False):
+    def get_evaluator(self, batch_size, is_distributed, testdev=False, legacy=False):
         from yolox.evaluators import INTFLOWEvaluator
 
-        val_loader = self.get_eval_loader(batch_size, is_distributed, testdev=testdev)
+        val_loader = self.get_eval_loader(batch_size, is_distributed, testdev, legacy)
         evaluator = INTFLOWEvaluator(
             dataloader=val_loader,
             img_size=self.test_size,

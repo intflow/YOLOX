@@ -162,7 +162,7 @@ class INTFLOWEvaluator:
                     "category_id": label,
                     "bbox": bboxes[ind].numpy().tolist(),
                     "score": scores[ind].numpy().item(),
-                    "segmentation": [segments[ind].reshape(-1).tolist(),]
+                    "segmentation": [segments[ind].reshape(-1).tolist()]
                 }  # COCO json format
                 data_list.append(pred_data)
         return data_list

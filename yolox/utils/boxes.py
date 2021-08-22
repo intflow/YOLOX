@@ -235,7 +235,7 @@ def rotate_boxes(rbboxes):
 
         corners_list.append(corners)
     corners_list = np.array(corners_list)
-    return np.array(corners_list)
+    return corners_list
 
 @amp.float_function
 def order_points(pts):
