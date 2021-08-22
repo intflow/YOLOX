@@ -14,7 +14,7 @@ from yolox.utils import bboxes_iou, rbboxes_iou
 
 import math
 
-from .losses import IOUloss, RIOUloss, MultiClassBCELoss
+from .losses import IOUloss, RIOUloss, MultiClassBCELoss, PSSBCELoss
 from .network_blocks import BaseConv, DWConv
 
 
@@ -141,6 +141,10 @@ class YOLOXHead(nn.Module):
                                                 focus_param=2,
                                                 balance_param=0.25,
                                                 reduction="none")
+        self.pss_loss = PSSBCELoss(use_focal_weights=True,
+                                                focus_param=3,
+                                                balance_param=0.25,
+                                                reduction="none")
         self.bcewithlog_loss = nn.BCEWithLogitsLoss(reduction="none")
         self.iou_loss = RIOUloss(reduction="none")
         self.strides = strides
@@ -156,12 +160,6 @@ class YOLOXHead(nn.Module):
             b = conv.bias.view(self.n_anchors, -1)
             b.data.fill_(-math.log((1 - prior_prob) / prior_prob))
             conv.bias = torch.nn.Parameter(b.view(-1), requires_grad=True)
-
-        ###for layers in self.pss_preds:
-        ###    for conv in layers:
-        ###        b = conv.bias.view(self.n_anchors, -1)
-        ###        b.data.fill_(-math.log((1 - prior_prob) / prior_prob))
-        ###        conv.bias = torch.nn.Parameter(b.view(-1), requires_grad=True)
 
     def forward(self, xin, labels=None, imgs=None):
         outputs = []
@@ -436,8 +434,11 @@ class YOLOXHead(nn.Module):
             loss_rad = (
                 self.l1_loss(rad_preds.view(-1, 2)[fg_masks].float(), rad_targets.float())
             ).sum() / num_fg
+            ###loss_obj = (
+            ###    self.focalbce_loss(obj_preds.float().view(-1, 1), obj_targets)
+            ###).sum() / num_fg
             loss_obj = (
-                self.focalbce_loss(obj_preds.float().view(-1, 1), obj_targets)
+                self.pss_loss([obj_preds.float().view(-1, 1),cls_preds.float().view(-1, self.num_classes).max(dim=1)[0].view(-1,1)], obj_targets)
             ).sum() / num_fg
             loss_cls = (
                 self.focalbce_loss(cls_preds.float().view(-1, self.num_classes)[fg_masks], cls_targets)
@@ -553,7 +554,7 @@ class YOLOXHead(nn.Module):
             del cls_preds_, obj_preds_
 
             cost = (
-                10.0 * pair_wise_cls_loss
+                pair_wise_cls_loss
                 + 3.0 * pair_wise_ious_loss
                 + 100000.0 * (~is_in_boxes_and_center)
             )

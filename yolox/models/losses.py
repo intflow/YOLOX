@@ -30,35 +30,6 @@ class RIOUloss(nn.Module):
         elif self.loss_type == "giou":
             loss, _ = cal_giou(_pred, _target)
 
-        #tl = torch.max(
-        #    (pred[:, :2] - pred[:, 2:4] / 2), (target[:, :2] - target[:, 2:4] / 2)
-        #)
-        #br = torch.min(
-        #    (pred[:, :2] + pred[:, 2:4] / 2), (target[:, :2] + target[:, 2:4] / 2)
-        #)
-
-        #area_p = torch.prod(pred[:, 2:4], 1)
-        #area_g = torch.prod(target[:, 2:4], 1)
-
-        #en = (tl < br).type(tl.type()).prod(dim=1)
-        #area_i = torch.prod(br - tl, 1) * en
-        #iou = (area_i) / (area_p + area_g - area_i + 1e-16)
-
-        #if self.loss_type == "iou":
-        #    ###iou *= rad_scale_inv
-        #    loss = 1 - iou ** 2
-        #elif self.loss_type == "giou":
-        #    c_tl = torch.min(
-        #        (pred[:, :2] - pred[:, 2:4] / 2), (target[:, :2] - target[:, 2:4] / 2)
-        #    )
-        #    c_br = torch.max(
-        #        (pred[:, :2] + pred[:, 2:4] / 2), (target[:, :2] + target[:, 2:4] / 2)
-        #    )
-        #    area_c = torch.prod(c_br - c_tl, 1)
-        #    giou = iou - (area_c - area_i) / area_c.clamp(1e-16)
-        #    ###giou *= rad_scale_inv
-        #    loss = 1 - giou.clamp(min=-1.0, max=1.0)
-
         if self.reduction == "mean":
             loss = loss.mean()
         elif self.reduction == "sum":
@@ -126,7 +97,7 @@ class MultiClassBCELoss(nn.Module):
         super().__init__()
 
         #self.use_weight_mask = use_weight_mask
-        self.nll_loss = nn.BCEWithLogitsLoss(reduction=reduction)
+        self.bcewl = nn.BCEWithLogitsLoss(reduction=reduction)
         self.use_focal_weights = use_focal_weights
         self.focus_param = focus_param
         self.balance_param = balance_param
@@ -143,11 +114,11 @@ class MultiClassBCELoss(nn.Module):
         #assert outputs.size(0) == weights.size(0)
         #assert outputs.size(1) == weights.size(1)
 
-        bce_loss = self.nll_loss(input=outputs,
+        bcewl_loss = self.bcewl(input=outputs,
                                  target=targets)
         
         if self.use_focal_weights:
-            logpt = - bce_loss
+            logpt = - bcewl_loss
             pt    = torch.exp(logpt)
 
             focal_loss = -((1 - pt) ** self.focus_param) * logpt
@@ -156,8 +127,6 @@ class MultiClassBCELoss(nn.Module):
             return balanced_focal_loss
         else:
             return bce_loss 
-
-
 
 
 # Focal loss for PSS
@@ -172,7 +141,7 @@ class PSSBCELoss(nn.Module):
 
         #self.use_weight_mask = use_weight_mask
         self.sigm = nn.Sigmoid()
-        self.bceloss = nn.BCELoss(reduction=reduction)
+        self.bcewl = nn.BCEWithLogitsLoss(reduction=reduction)
         self.use_focal_weights = use_focal_weights
         self.focus_param = focus_param
         self.balance_param = balance_param
@@ -180,23 +149,22 @@ class PSSBCELoss(nn.Module):
     def forward(self,
                 outputs,
                 targets):
-        
-        o1, o2 = outputs
-        t1 = targets
 
-        # inputs and targets are assumed to be BatchxClasses
-        assert len(o1.shape) == len(t1.shape)
-        assert o1.size(0) == t1.size(0)
-        assert o1.size(1) == t1.size(1)
-        
-        outputs = self.sigm(o1) * self.sigm(o2)
-        targets = t1
+        outputs1, outputs2 = outputs
 
-        bce_loss = self.bceloss(input=outputs,
+        ### inputs and targets are assumed to be BatchxClasses
+        assert len(outputs1.shape) == len(targets.shape)
+        assert outputs1.size(0) == targets.size(0)
+        assert outputs1.size(1) == targets.size(1)
+        
+        
+        outputs = torch.logit(torch.sqrt(self.sigm(outputs1) * self.sigm(outputs2) + 1e-6))
+
+        bcewl_loss = self.bcewl(input=outputs,
                                  target=targets)
         
         if self.use_focal_weights:
-            logpt = - bce_loss
+            logpt = - bcewl_loss
             pt    = torch.exp(logpt)
 
             focal_loss = -((1 - pt) ** self.focus_param) * logpt

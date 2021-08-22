@@ -145,9 +145,9 @@ def rbboxes_iou(target, pred, iou_type="diou", calc_type="smallest"):
     
     n = _target.shape[0]
     m = _pred.shape[0]
-    _target = _target[:,None,:] * torch.ones((m,5)).to(_target.device)
-    _pred = torch.ones((n,5)).to(_pred.device)[:,None,:] * _pred
-    
+    _target = _target[:,None,:] + torch.zeros((m,5)).to(_target.device)
+    _pred = _pred[:,None,:] + torch.zeros((n,5)).to(_target.device)
+    _pred = _pred.permute(1,0,2)
     if iou_type == "diou": #defualt as DIoU
         loss, iou = cal_diou(_pred, _target, calc_type)
     elif iou_type == "giou":
