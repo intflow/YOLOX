@@ -42,7 +42,7 @@ def make_parser():
     parser.add_argument(
         "-f",
         "--exp_file",
-        default="exps/intflow_oad__total_100K_2/yolox_intflow_s.py",
+        default="exps/intflow_oad__total_1K/yolox_intflow_s.py",
         type=str,
         help="pls input your expriment description file",
     )
@@ -53,13 +53,13 @@ def make_parser():
         type=str,
         help="device to run our model, can either be cpu or gpu",
     )
-    parser.add_argument("--conf", default=0.3, type=float, help="test conf")
-    parser.add_argument("--nms", default=0.3, type=float, help="test nms threshold")
+    parser.add_argument("--conf", default=0.5, type=float, help="test conf")
+    parser.add_argument("--nms", default=0.45, type=float, help="test nms threshold")
     parser.add_argument("--tsize", default=None, type=int, help="test img size")
     parser.add_argument(
         "--fp16",
         dest="fp16",
-        default=False,
+        default=True,
         action="store_true",
         help="Adopting mix precision evaluating.",
     )

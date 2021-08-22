@@ -134,23 +134,26 @@ def bboxes_iou(bboxes_a, bboxes_b, xyxy=True):
     area_i = torch.prod(br - tl, 2) * en  # * ((tl < br).all())
     return area_i / (area_a[:, None] + area_b - area_i)
 
-def rbboxes_iou(bboxes_a, bboxes_b, fg_mask):
-    if bboxes_a.shape[1] != 5 or bboxes_b.shape[1] != 5:
+def rbboxes_iou(target, pred, iou_type="diou", calc_type="smallest"):
+    if target.shape[1] != 6 or pred.shape[1] != 6:
         raise IndexError
 
-    pair_wise_iou = bboxes_iou(bboxes_a, bboxes_b, False)
-    ###iou_mask = pair_wise_iou.sum(dim=0)
-###
-    ###bboxes_b_small = bboxes_b[iou_mask>0.3,:]
-###
-    ###n = bboxes_a.shape[0]
-    ###m = bboxes_b_small.shape[0]
-    ###_bboxes_a = bboxes_a[:,None,:] * torch.ones((m,5)).to(bboxes_a.device)
-    ###_bboxes_b = torch.ones((n,5)).to(bboxes_b_small.device)[:,None,:] * bboxes_b_small
-    ###_, pairwise_iou_small = cal_diou(_bboxes_a, _bboxes_b, "pca")
-    ###
-    ###pair_wise_iou[:,iou_mask>0.3] = pairwise_iou_small
-    return pair_wise_iou
+    rad_target = torch.atan2(target[:,4],target[:,5]).unsqueeze(-1)
+    rad_pred = torch.atan2(pred[:,4],pred[:,5]).unsqueeze(-1)
+    _target = torch.cat((target[:,:4],rad_target),dim=-1)
+    _pred = torch.cat((pred[:,:4],rad_pred),dim=-1)
+    
+    n = _target.shape[0]
+    m = _pred.shape[0]
+    _target = _target[:,None,:] * torch.ones((m,5)).to(_target.device)
+    _pred = torch.ones((n,5)).to(_pred.device)[:,None,:] * _pred
+    
+    if iou_type == "diou": #defualt as DIoU
+        loss, iou = cal_diou(_pred, _target,calc_type)
+    elif iou_type == "giou":
+        loss, iou = cal_giou(_pred, _target,calc_type)
+
+    return iou
 
 
 def matrix_iou(a, b):

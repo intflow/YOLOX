@@ -10,7 +10,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from yolox.utils import bboxes_iou
+from yolox.utils import bboxes_iou, rbboxes_iou
 
 import math
 
@@ -347,8 +347,10 @@ class YOLOXHead(nn.Module):
                         num_gt,
                         total_num_anchors,
                         gt_bboxes_per_image,
+                        gt_rads_per_image,
                         gt_classes,
                         bboxes_preds_per_image,
+                        rads_preds_per_image,
                         expanded_strides,
                         x_shifts,
                         y_shifts,
@@ -377,8 +379,10 @@ class YOLOXHead(nn.Module):
                         num_gt,
                         total_num_anchors,
                         gt_bboxes_per_image,
+                        gt_rads_per_image,
                         gt_classes,
                         bboxes_preds_per_image,
+                        rads_preds_per_image,
                         expanded_strides,
                         x_shifts,
                         y_shifts,
@@ -429,24 +433,24 @@ class YOLOXHead(nn.Module):
             loss_iou = (
                 self.iou_loss(torch.cat((bbox_preds,rad_preds),dim=-1).float().view(-1, 6)[fg_masks], torch.cat((reg_targets,rad_targets),dim=-1).float())
             ).sum() / num_fg
-        loss_rad = (
-            self.l1_loss(rad_preds.view(-1, 2)[fg_masks], rad_targets)
-        ).sum() / num_fg
-        loss_obj = (
-            self.focalbce_loss(obj_preds.view(-1, 1), obj_targets)
-        ).sum() / num_fg
-        loss_cls = (
-            self.focalbce_loss(cls_preds.view(-1, self.num_classes)[fg_masks], cls_targets)
-        ).sum() / num_fg
-        if self.use_l1:
-            loss_l1 = (
-                self.l1_loss(origin_preds.view(-1, 4)[fg_masks], l1_targets)
+            loss_rad = (
+                self.l1_loss(rad_preds.view(-1, 2)[fg_masks].float(), rad_targets.float())
             ).sum() / num_fg
-        else:
-            loss_l1 = 0.0
+            loss_obj = (
+                self.focalbce_loss(obj_preds.float().view(-1, 1), obj_targets)
+            ).sum() / num_fg
+            loss_cls = (
+                self.focalbce_loss(cls_preds.float().view(-1, self.num_classes)[fg_masks], cls_targets)
+            ).sum() / num_fg
+            if self.use_l1:
+                loss_l1 = (
+                    self.l1_loss(origin_preds.float().view(-1, 4)[fg_masks], l1_targets)
+                ).sum() / num_fg
+            else:
+                loss_l1 = 0.0
 
-        reg_weight = 5.0
-        loss = reg_weight * loss_iou + loss_obj + loss_cls + loss_l1 + loss_rad
+            reg_weight = 5.0
+            loss = reg_weight * loss_iou + loss_obj + loss_cls + loss_l1 + loss_rad
 
         return (
             loss,
@@ -472,8 +476,10 @@ class YOLOXHead(nn.Module):
         num_gt,
         total_num_anchors,
         gt_bboxes_per_image,
+        gt_rads_per_image,
         gt_classes,
         bboxes_preds_per_image,
+        rads_preds_per_image,
         expanded_strides,
         x_shifts,
         y_shifts,
@@ -488,7 +494,9 @@ class YOLOXHead(nn.Module):
         if mode == "cpu":
             print("------------CPU Mode for This Batch-------------")
             gt_bboxes_per_image = gt_bboxes_per_image.cpu().float()
+            gt_rads_per_image = gt_rads_per_image.cpu().float()
             bboxes_preds_per_image = bboxes_preds_per_image.cpu().float()
+            rads_preds_per_image = rads_preds_per_image.cpu().float()
             gt_classes = gt_classes.cpu().float()
             expanded_strides = expanded_strides.cpu().float()
             x_shifts = x_shifts.cpu()
@@ -504,15 +512,20 @@ class YOLOXHead(nn.Module):
         )
 
         bboxes_preds_per_image = bboxes_preds_per_image[fg_mask]
+        rads_preds_per_image = rads_preds_per_image[fg_mask]
         cls_preds_ = cls_preds[batch_idx][fg_mask]
         obj_preds_ = obj_preds[batch_idx][fg_mask]
         num_in_boxes_anchor = bboxes_preds_per_image.shape[0]
 
         if mode == "cpu":
             gt_bboxes_per_image = gt_bboxes_per_image.cpu()
+            gt_rads_per_image = gt_rads_per_image.cpu()
             bboxes_preds_per_image = bboxes_preds_per_image.cpu()
+            rads_preds_per_image = rads_preds_per_image.cpu()
 
-        pair_wise_ious = bboxes_iou(gt_bboxes_per_image, bboxes_preds_per_image, False)
+        with torch.cuda.amp.autocast(enabled=False):
+            pair_wise_ious = rbboxes_iou(torch.cat((gt_bboxes_per_image,gt_rads_per_image),dim=-1), 
+                                        torch.cat((bboxes_preds_per_image,rads_preds_per_image),dim=-1))
 
         gt_cls_per_image = (
             F.one_hot(gt_classes.to(torch.int64), self.num_classes)
@@ -520,29 +533,29 @@ class YOLOXHead(nn.Module):
             .unsqueeze(1)
             .repeat(1, num_in_boxes_anchor, 1)
         )
-        pair_wise_ious_loss = -torch.log(pair_wise_ious + 1e-6)
 
         if mode == "cpu":
             cls_preds_, obj_preds_ = cls_preds_.cpu(), obj_preds_.cpu()
 
         with torch.cuda.amp.autocast(enabled=False):
+            pair_wise_ious_loss = -torch.log(pair_wise_ious + 1e-6).type(torch.float32)
             cls_preds_ = (
                 cls_preds_.float().unsqueeze(0).repeat(num_gt, 1, 1).sigmoid_()
                 * obj_preds_.unsqueeze(0).repeat(num_gt, 1, 1).sigmoid_()
             )
             cls_preds_ = cls_preds_.clamp(0, 1)
             cls_preds_[cls_preds_!=cls_preds_] = 0 # or 1 depending on your model's need
-            cls_preds_ += 1e-8
+            cls_preds_ += 1e-6
             pair_wise_cls_loss = F.binary_cross_entropy(
                 cls_preds_.sqrt_(), gt_cls_per_image, reduction="none"
             ).sum(-1)
-        del cls_preds_, obj_preds_
+            del cls_preds_, obj_preds_
 
-        cost = (
-            10.0 * pair_wise_cls_loss
-            + 3.0 * pair_wise_ious_loss
-            + 100000.0 * (~is_in_boxes_and_center)
-        )
+            cost = (
+                10.0 * pair_wise_cls_loss
+                + 3.0 * pair_wise_ious_loss
+                + 100000.0 * (~is_in_boxes_and_center)
+            )
 
         (
             num_fg,
