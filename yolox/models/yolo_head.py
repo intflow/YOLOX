@@ -434,11 +434,8 @@ class YOLOXHead(nn.Module):
             loss_rad = (
                 self.l1_loss(rad_preds.view(-1, 2)[fg_masks].float(), rad_targets.float())
             ).sum() / num_fg
-            ###loss_obj = (
-            ###    self.focalbce_loss(obj_preds.float().view(-1, 1), obj_targets)
-            ###).sum() / num_fg
             loss_obj = (
-                self.pss_loss([obj_preds.float().view(-1, 1),cls_preds.float().view(-1, self.num_classes).max(dim=1)[0].view(-1,1)], obj_targets)
+                self.focalbce_loss(obj_preds.float().view(-1, 1), obj_targets)
             ).sum() / num_fg
             loss_cls = (
                 self.focalbce_loss(cls_preds.float().view(-1, self.num_classes)[fg_masks], cls_targets)
