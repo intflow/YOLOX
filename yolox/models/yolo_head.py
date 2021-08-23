@@ -117,12 +117,17 @@ class YOLOXHead(nn.Module):
                 )
             )
             self.rad_preds.append(
-                nn.Conv2d(
-                    in_channels=int(256 * width),
-                    out_channels=2,
-                    kernel_size=1,
-                    stride=1,
-                    padding=0,
+                nn.Sequential(
+                    *[
+                        nn.Conv2d(
+                            in_channels=int(256 * width),
+                            out_channels=2,
+                            kernel_size=1,
+                            stride=1,
+                            padding=0,
+                        ),
+                        nn.Tanh()
+                    ]
                 )
             )
             self.obj_preds.append(
@@ -146,7 +151,8 @@ class YOLOXHead(nn.Module):
                                                 balance_param=0.25,
                                                 reduction="none")
         self.bcewithlog_loss = nn.BCEWithLogitsLoss(reduction="none")
-        self.iou_loss = RIOUloss(reduction="none")
+        #self.iou_loss = RIOUloss(reduction="none")
+        self.iou_loss = IOUloss(reduction="none")
         self.strides = strides
         self.grids = [torch.zeros(1)] * len(in_channels)
 
@@ -428,8 +434,11 @@ class YOLOXHead(nn.Module):
 
         num_fg = max(num_fg, 1)
         with torch.cuda.amp.autocast(enabled=False):
+            ###loss_iou = (
+            ###    self.iou_loss(torch.cat((bbox_preds,rad_preds),dim=-1).float().view(-1, 6)[fg_masks], torch.cat((reg_targets,rad_targets),dim=-1).float())
+            ###).sum() / num_fg
             loss_iou = (
-                self.iou_loss(torch.cat((bbox_preds,rad_preds),dim=-1).float().view(-1, 6)[fg_masks], torch.cat((reg_targets,rad_targets),dim=-1).float())
+                self.iou_loss(bbox_preds.float().view(-1, 4)[fg_masks], reg_targets)
             ).sum() / num_fg
             loss_rad = (
                 self.l1_loss(rad_preds.view(-1, 2)[fg_masks].float(), rad_targets.float())
@@ -521,10 +530,9 @@ class YOLOXHead(nn.Module):
             bboxes_preds_per_image = bboxes_preds_per_image.cpu()
             rads_preds_per_image = rads_preds_per_image.cpu()
 
-        ###with torch.cuda.amp.autocast(enabled=False):
-        ###    pair_wise_ious = rbboxes_iou(torch.cat((gt_bboxes_per_image,gt_rads_per_image),dim=-1), 
-        ###                                torch.cat((bboxes_preds_per_image,rads_preds_per_image),dim=-1))
-        pair_wise_ious = bboxes_iou(gt_bboxes_per_image, bboxes_preds_per_image, False)
+        pair_wise_ious = rbboxes_iou(torch.cat((gt_bboxes_per_image,gt_rads_per_image),dim=-1), 
+                                    torch.cat((bboxes_preds_per_image,rads_preds_per_image),dim=-1), False)
+        ##pair_wise_ious = bboxes_iou(gt_bboxes_per_image, bboxes_preds_per_image, False)
 
         gt_cls_per_image = (
             F.one_hot(gt_classes.to(torch.int64), self.num_classes)
@@ -537,7 +545,7 @@ class YOLOXHead(nn.Module):
             cls_preds_, obj_preds_ = cls_preds_.cpu(), obj_preds_.cpu()
 
         with torch.cuda.amp.autocast(enabled=False):
-            pair_wise_ious_loss = -torch.log(pair_wise_ious + 1e-6).type(torch.float32)
+            pair_wise_ious_loss = -torch.log(pair_wise_ious.float() + 1e-6)
             cls_preds_ = (
                 cls_preds_.float().unsqueeze(0).repeat(num_gt, 1, 1).sigmoid_()
                 * obj_preds_.unsqueeze(0).repeat(num_gt, 1, 1).sigmoid_()

@@ -17,7 +17,7 @@ from yolox.utils import configure_nccl, configure_omp, get_num_devices
 
 def make_parser():
     parser = argparse.ArgumentParser("YOLOX train parser")
-    parser.add_argument("-expn", "--experiment-name", type=str, default="yolox_oad_e2e_s-intflow_total_1K")
+    parser.add_argument("-expn", "--experiment-name", type=str, default="yolox_oad_e2e_s-intflow_total_1K(RIoUcost)")
     parser.add_argument("-n", "--name", type=str, default="yolox_oad_e2e_s", help="model name")
 
     # distributed
@@ -44,7 +44,7 @@ def make_parser():
     parser.add_argument(
         "--resume", default=False, action="store_true", help="resume training"
     )
-    #parser.add_argument("-c", "--ckpt", default='/data/pretrained/yolox_s.pth.tar', type=str, help="checkpoint file")
+    #parser.add_argument("-c", "--ckpt", default='/data/pretrained/yolox_s.pth', type=str, help="checkpoint file")
     #parser.add_argument("-c", "--ckpt", default='YOLOX_outputs/yolox_oad_e2e_s-intflow_total_1K/latest_ckpt.pth', type=str, help="checkpoint file")
     #parser.add_argument("-c", "--ckpt", default='YOLOX_outputs/yolox_e2e_s-intflow_total_1K(2)/best_ckpt.pth', type=str, help="checkpoint file")
     parser.add_argument("-c", "--ckpt", default='/data/pretrained/hcow/yolox_intflow_s-intflow_total_100K.pth.tar', type=str, help="checkpoint file")

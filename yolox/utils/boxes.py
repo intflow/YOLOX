@@ -134,27 +134,38 @@ def bboxes_iou(bboxes_a, bboxes_b, xyxy=True):
     area_i = torch.prod(br - tl, 2) * en  # * ((tl < br).all())
     return area_i / (area_a[:, None] + area_b - area_i)
 
-def rbboxes_iou(target, pred, iou_type="diou", calc_type="smallest"):
-    if target.shape[1] != 6 or pred.shape[1] != 6:
+def rbboxes_iou(bboxes_a, bboxes_b, xyxy=True):
+    if bboxes_a.shape[1] != 6 or bboxes_b.shape[1] != 6:
         raise IndexError
 
-    rad_target = torch.atan2(target[:,4],target[:,5]).unsqueeze(-1)
-    rad_pred = torch.atan2(pred[:,4],pred[:,5]).unsqueeze(-1)
-    _target = torch.cat((target[:,:4],rad_target),dim=-1)
-    _pred = torch.cat((pred[:,:4],rad_pred),dim=-1)
+    if xyxy:
+        tl = torch.max(bboxes_a[:, None, :2], bboxes_b[:, :2])
+        br = torch.min(bboxes_a[:, None, 2:4], bboxes_b[:, 2:4])
+        area_a = torch.prod(bboxes_a[:, 2:4] - bboxes_a[:, :2], 1)
+        area_b = torch.prod(bboxes_b[:, 2:4] - bboxes_b[:, :2], 1)
+    else:
+        tl = torch.max(
+            (bboxes_a[:, None, :2] - bboxes_a[:, None, 2:4] / 2),
+            (bboxes_b[:, :2] - bboxes_b[:, 2:4] / 2),
+        )
+        br = torch.min(
+            (bboxes_a[:, None, :2] + bboxes_a[:, None, 2:4] / 2),
+            (bboxes_b[:, :2] + bboxes_b[:, 2:4] / 2),
+        )
+        area_a = torch.prod(bboxes_a[:, 2:4], 1)
+        area_b = torch.prod(bboxes_b[:, 2:4], 1)
     
-    n = _target.shape[0]
-    m = _pred.shape[0]
-    _target = _target[:,None,:] + torch.zeros((m,5)).to(_target.device)
-    _pred = _pred[:,None,:] + torch.zeros((n,5)).to(_target.device)
-    _pred = _pred.permute(1,0,2)
-    if iou_type == "diou": #defualt as DIoU
-        loss, iou = cal_diou(_pred, _target, calc_type)
-    elif iou_type == "giou":
-        loss, iou = cal_giou(_pred, _target, calc_type)
-
-    del _pred, _target, loss
-    return iou
+    rad_a = bboxes_a[:,4:6]
+    rad_b = bboxes_b[:,4:6]
+    rad_a = rad_a.view([rad_a.shape[0], 1, 2]).repeat([1, rad_b.shape[0], 1])
+    rad_b = rad_b.view([1, rad_b.shape[0], 2]).repeat([rad_a.shape[0], 1, 1])
+    rad_d = rad_a - rad_b
+    rad_d = rad_d.mean(dim=-1)
+    rad_scale = (2.0 - torch.abs(rad_d)) / 2.0 
+    en = (tl < br).type(tl.type()).prod(dim=2)
+    en *= rad_scale
+    area_i = torch.prod(br - tl, 2) * en  # * ((tl < br).all())
+    return area_i / (area_a[:, None] + area_b - area_i)
 
 
 def matrix_iou(a, b):

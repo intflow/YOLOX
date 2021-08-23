@@ -10,7 +10,7 @@ from torch.autograd import Variable
 from Rotated_IoU.oriented_iou_loss import cal_diou, cal_giou
 
 class RIOUloss(nn.Module):
-    def __init__(self, reduction="none", loss_type="iou"):
+    def __init__(self, reduction="none", loss_type="giou"):
         super(RIOUloss, self).__init__()
         self.reduction = reduction
         self.loss_type = loss_type
