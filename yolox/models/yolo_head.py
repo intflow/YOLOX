@@ -527,9 +527,9 @@ class YOLOXHead(nn.Module):
             bboxes_preds_per_image = bboxes_preds_per_image.cpu()
             rads_preds_per_image = rads_preds_per_image.cpu()
 
-        pair_wise_ious = rbboxes_iou(torch.cat((gt_bboxes_per_image,gt_rads_per_image),dim=-1), 
-                                    torch.cat((bboxes_preds_per_image,rads_preds_per_image),dim=-1), False)
-        ##pair_wise_ious = bboxes_iou(gt_bboxes_per_image, bboxes_preds_per_image, False)
+        ##pair_wise_ious = rbboxes_iou(torch.cat((gt_bboxes_per_image,gt_rads_per_image),dim=-1), 
+        ##                            torch.cat((bboxes_preds_per_image,rads_preds_per_image),dim=-1), False)
+        pair_wise_ious = bboxes_iou(gt_bboxes_per_image, bboxes_preds_per_image, False)
 
         gt_cls_per_image = (
             F.one_hot(gt_classes.to(torch.int64), self.num_classes)

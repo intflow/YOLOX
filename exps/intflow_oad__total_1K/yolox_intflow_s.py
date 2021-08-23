@@ -34,7 +34,7 @@ class Exp(MyExp):
         self.enable_mixup = True
 
         # --------------  training config --------------------- #
-        self.warmup_epochs = 1
+        self.warmup_epochs = 5
         self.max_epoch = 300
         self.warmup_lr = 0
         self.basic_lr_per_img = 0.01 / 64.0
