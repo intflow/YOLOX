@@ -14,7 +14,7 @@ from yolox.utils import bboxes_iou, rbboxes_iou
 
 import math
 
-from .losses import IOUloss, RIOUloss, MultiClassBCELoss, PSSBCELoss
+from .losses import IOUloss, MultiClassBCELoss, PSSBCELoss
 from .network_blocks import BaseConv, DWConv
 
 
