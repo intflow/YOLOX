@@ -7,37 +7,36 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.autograd import Variable
-from Rotated_IoU.oriented_iou_loss import cal_diou, cal_giou
 
-class RIOUloss(nn.Module):
-    def __init__(self, reduction="none", loss_type="giou"):
-        super(RIOUloss, self).__init__()
-        self.reduction = reduction
-        self.loss_type = loss_type
-
-    def forward(self, pred, target):
-        assert pred.shape[0] == target.shape[0]
-
-        rad_pred = torch.atan2(pred[:,4],pred[:,5]).unsqueeze(-1)
-        rad_target = torch.atan2(target[:,4],target[:,5]).unsqueeze(-1)
-        _pred = torch.cat((pred[:,:4],rad_pred),dim=-1)
-        _target = torch.cat((target[:,:4],rad_target),dim=-1)
-        _pred = _pred.view(1,-1, 5)
-        _target = _target.view(1,-1, 5)
-        
-        if self.loss_type == "iou": #defualt as DIoU
-            loss, _ = cal_diou(_pred, _target)
-        elif self.loss_type == "giou":
-            loss, _ = cal_giou(_pred, _target)
-
-        if self.reduction == "mean":
-            loss = loss.mean()
-        elif self.reduction == "sum":
-            loss = loss.sum()
-        else:
-            loss = loss[0]
-
-        return loss
+##class RIOUloss(nn.Module):
+##    def __init__(self, reduction="none", loss_type="giou"):
+##        super(RIOUloss, self).__init__()
+##        self.reduction = reduction
+##        self.loss_type = loss_type
+##
+##    def forward(self, pred, target):
+##        assert pred.shape[0] == target.shape[0]
+##
+##        rad_pred = torch.atan2(pred[:,4],pred[:,5]).unsqueeze(-1)
+##        rad_target = torch.atan2(target[:,4],target[:,5]).unsqueeze(-1)
+##        _pred = torch.cat((pred[:,:4],rad_pred),dim=-1)
+##        _target = torch.cat((target[:,:4],rad_target),dim=-1)
+##        _pred = _pred.view(1,-1, 5)
+##        _target = _target.view(1,-1, 5)
+##        
+##        if self.loss_type == "iou": #defualt as DIoU
+##            loss, _ = cal_diou(_pred, _target)
+##        elif self.loss_type == "giou":
+##            loss, _ = cal_giou(_pred, _target)
+##
+##        if self.reduction == "mean":
+##            loss = loss.mean()
+##        elif self.reduction == "sum":
+##            loss = loss.sum()
+##        else:
+##            loss = loss[0]
+##
+##        return loss
 
 class IOUloss(nn.Module):
     def __init__(self, reduction="none", loss_type="iou"):

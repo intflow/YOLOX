@@ -17,7 +17,7 @@ from yolox.utils import configure_nccl, configure_omp, get_num_devices
 
 def make_parser():
     parser = argparse.ArgumentParser("YOLOX train parser")
-    parser.add_argument("-expn", "--experiment-name", type=str, default="yolox_oad_e2e_s-intflow_total_1K(RIoUcost)")
+    parser.add_argument("-expn", "--experiment-name", type=str, default="yolox_oad_e2e_s-intflow_total_1K(RIoUcost_fp16)")
     parser.add_argument("-n", "--name", type=str, default="yolox_oad_e2e_s", help="model name")
 
     # distributed
@@ -64,7 +64,7 @@ def make_parser():
     parser.add_argument(
         "--fp16",
         dest="fp16",
-        default=False,
+        default=True,
         action="store_true",
         help="Adopting mix precision training.",
     )

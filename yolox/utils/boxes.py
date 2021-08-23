@@ -10,7 +10,6 @@ import torchvision
 import math
 from retinanet._C import iou as iou_cuda
 from apex import amp
-from Rotated_IoU.oriented_iou_loss import cal_diou, cal_giou
 
 
 __all__ = [
