@@ -433,31 +433,28 @@ class YOLOXHead(nn.Module):
             l1_targets = torch.cat(l1_targets, 0)
 
         num_fg = max(num_fg, 1)
-        with torch.cuda.amp.autocast(enabled=False):
-            ###loss_iou = (
-            ###    self.iou_loss(torch.cat((bbox_preds,rad_preds),dim=-1).float().view(-1, 6)[fg_masks], torch.cat((reg_targets,rad_targets),dim=-1).float())
-            ###).sum() / num_fg
-            loss_iou = (
-                self.iou_loss(bbox_preds.float().view(-1, 4)[fg_masks], reg_targets)
+        ##with torch.cuda.amp.autocast(enabled=False):
+        loss_iou = (
+            self.iou_loss(bbox_preds.float().view(-1, 4)[fg_masks], reg_targets)
+        ).sum() / num_fg
+        loss_rad = (
+            self.l1_loss(rad_preds.view(-1, 2)[fg_masks].float(), rad_targets.float())
+        ).sum() / num_fg
+        loss_obj = (
+            self.focalbce_loss(obj_preds.float().view(-1, 1), obj_targets)
+        ).sum() / num_fg
+        loss_cls = (
+            self.focalbce_loss(cls_preds.float().view(-1, self.num_classes)[fg_masks], cls_targets)
+        ).sum() / num_fg
+        if self.use_l1:
+            loss_l1 = (
+                self.l1_loss(origin_preds.float().view(-1, 4)[fg_masks], l1_targets)
             ).sum() / num_fg
-            loss_rad = (
-                self.l1_loss(rad_preds.view(-1, 2)[fg_masks].float(), rad_targets.float())
-            ).sum() / num_fg
-            loss_obj = (
-                self.focalbce_loss(obj_preds.float().view(-1, 1), obj_targets)
-            ).sum() / num_fg
-            loss_cls = (
-                self.focalbce_loss(cls_preds.float().view(-1, self.num_classes)[fg_masks], cls_targets)
-            ).sum() / num_fg
-            if self.use_l1:
-                loss_l1 = (
-                    self.l1_loss(origin_preds.float().view(-1, 4)[fg_masks], l1_targets)
-                ).sum() / num_fg
-            else:
-                loss_l1 = 0.0
+        else:
+            loss_l1 = 0.0
 
-            reg_weight = 5.0
-            loss = reg_weight * loss_iou + loss_obj + loss_cls + loss_l1 + loss_rad
+        reg_weight = 5.0
+        loss = reg_weight * loss_iou + loss_obj + loss_cls + loss_l1 + loss_rad
 
         return (
             loss,
@@ -558,11 +555,11 @@ class YOLOXHead(nn.Module):
             ).sum(-1)
             del cls_preds_, obj_preds_
 
-            cost = (
-                pair_wise_cls_loss
-                + 3.0 * pair_wise_ious_loss
-                + 100000.0 * (~is_in_boxes_and_center)
-            )
+        cost = (
+            pair_wise_cls_loss
+            + 3.0 * pair_wise_ious_loss
+            + 100000.0 * (~is_in_boxes_and_center)
+        )
 
         (
             num_fg,
