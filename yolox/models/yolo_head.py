@@ -496,7 +496,7 @@ class YOLOXHead(nn.Module):
             loss_l1 = 0.0
 
         reg_weight = 5.0
-        lm_weight = 0.7
+        lm_weight = 0.15
         loss = reg_weight * loss_iou + loss_obj + loss_cls + loss_l1 + loss_rad + loss_lm * lm_weight
 
         return (
@@ -590,23 +590,23 @@ class YOLOXHead(nn.Module):
             .unsqueeze(1)
             .repeat(1, num_in_boxes_anchor, 1)
         )
+        pair_wise_ious_loss = -torch.log(pair_wise_ious + 1e-8)
 
         if mode == "cpu":
             cls_preds_, obj_preds_ = cls_preds_.cpu(), obj_preds_.cpu()
 
         with torch.cuda.amp.autocast(enabled=False):
-            pair_wise_ious_loss = -torch.log(pair_wise_ious.float() + 1e-6)
             cls_preds_ = (
                 cls_preds_.float().unsqueeze(0).repeat(num_gt, 1, 1).sigmoid_()
                 * obj_preds_.unsqueeze(0).repeat(num_gt, 1, 1).sigmoid_()
             )
             cls_preds_ = cls_preds_.clamp(0, 1)
             cls_preds_[cls_preds_!=cls_preds_] = 0 # or 1 depending on your model's need
-            cls_preds_ += 1e-6
+            cls_preds_ += 1e-4
             pair_wise_cls_loss = F.binary_cross_entropy(
                 cls_preds_.sqrt_(), gt_cls_per_image, reduction="none"
             ).sum(-1)
-            del cls_preds_, obj_preds_
+            del cls_preds_
 
         cost = (
             pair_wise_cls_loss
