@@ -281,7 +281,7 @@ class YOLOXHead(nn.Module):
         grid = grid.view(1, -1, 2)
         output[..., :2] = (output[..., :2] + grid) * stride
         output[..., 2:4] = torch.exp(output[..., 2:4]) * stride
-        output[..., 9:9+2*3] = (output[..., 9:9+2*3] + grid.repeat((1,1,3))) * strides
+        output[..., 9:9+2*3] = (output[..., 9:9+2*3] + grid.repeat((1,1,3))) * stride
         return output, grid
 
     def decode_outputs(self, outputs, dtype):
@@ -496,7 +496,7 @@ class YOLOXHead(nn.Module):
             loss_l1 = 0.0
 
         reg_weight = 5.0
-        lm_weight = 0.1
+        lm_weight = 0.7
         loss = reg_weight * loss_iou + loss_obj + loss_cls + loss_l1 + loss_rad + loss_lm * lm_weight
 
         return (
