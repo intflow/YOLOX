@@ -86,11 +86,12 @@ def postprocess(prediction, num_classes, conf_thre=0.7, nms_thre=0.45):
         # Get score and class with highest confidence
         obj_conf = image_pred[:, 4].unsqueeze(-1)
         class_conf, class_pred = torch.max(image_pred[:, 5 : 5 + num_classes], 1, keepdim=True)
-        rad_sin = image_pred[:,  -2].unsqueeze(-1)
-        rad_cos = image_pred[:,  -1].unsqueeze(-1)
+        rad_sin = image_pred[:,  7].unsqueeze(-1)
+        rad_cos = image_pred[:,  8].unsqueeze(-1)
         rad = torch.atan2(rad_sin,rad_cos)
+        landmarks = image_pred[:, 9:9+2*3]
         conf_mask = (torch.sqrt(obj_conf.squeeze() * class_conf.squeeze() + 1e-6) >= conf_thre).squeeze()
-        detections = torch.cat((image_pred[:, :4], obj_conf, class_conf, class_pred.float(), rad), 1)
+        detections = torch.cat((image_pred[:, :4], obj_conf, class_conf, class_pred.float(), rad, landmarks), 1)
         detections = detections[conf_mask]
         if not detections.size(0):
             continue##
@@ -180,10 +181,12 @@ def matrix_iou(a, b):
     return area_i / (area_a[:, np.newaxis] + area_b - area_i + 1e-12)
 
 
-def adjust_box_anns(bbox, scale_ratio, padw, padh, w_max, h_max):
+def adjust_box_anns(bbox, landmark, scale_ratio, padw, padh, w_max, h_max):
     bbox[:, 0::2] = np.clip(bbox[:, 0::2] * scale_ratio + padw, 0, w_max)
     bbox[:, 1::2] = np.clip(bbox[:, 1::2] * scale_ratio + padh, 0, h_max)
-    return bbox
+    landmark[:, 0::2] = np.clip(landmark[:, 0::2] * scale_ratio + padw, 0, w_max)
+    landmark[:, 1::2] = np.clip(landmark[:, 1::2] * scale_ratio + padh, 0, h_max)
+    return bbox, landmark
 
 
 def xyxy2xywh(bboxes):

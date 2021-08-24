@@ -10,13 +10,14 @@ import os
 
 __all__ = ["vis"]
 
-def vis(img, boxes, rads, scores, cls_ids, conf=0.5, class_names=None):
+def vis(img, boxes, rads, scores, cls_ids, landmarks, conf=0.5, class_names=None):
 
     boxes[:,0:4] = B.xyxy2cxcywh(boxes[:,0:4])
     for i in range(len(boxes)):
         box = boxes[i]
         rad = rads[i]
         cls_id = int(cls_ids[i])
+        landmark = landmarks[i]
         score = scores[i]
         if score < conf:
             continue
@@ -27,6 +28,7 @@ def vis(img, boxes, rads, scores, cls_ids, conf=0.5, class_names=None):
         x0 = int(cx - w/2)
         y0 = int(cy - h/2)
         [sx1, sy1, sx2, sy2, sx3, sy3, sx4, sy4] = B.rotate_box([cx,cy,w,h,rad])
+        [l1_x, l1_y, l2_x, l2_y, l3_x, l3_y] = l1_x=landmarks
 
         color = (_COLORS[cls_id] * 255).astype(np.uint8).tolist()
         text = '{}:{:.1f}%'.format(class_names[cls_id], score * 100)
@@ -39,6 +41,10 @@ def vis(img, boxes, rads, scores, cls_ids, conf=0.5, class_names=None):
         cv2.line(img,(int(sx2),int(sy2)),(int(sx3),int(sy3)),color,2)
         cv2.line(img,(int(sx3),int(sy3)),(int(sx4),int(sy4)),color,2)
         cv2.line(img,(int(sx4),int(sy4)),(int(sx1),int(sy1)),color,2)
+
+        cv2.circle(img, (int(l1_x),int(l1_y)), radius=4, color=(0, 0, 255), thickness=-1)
+        cv2.circle(img, (int(l2_x),int(l2_y)), radius=4, color=(0, 255, 0), thickness=-1)
+        cv2.circle(img, (int(l3_x),int(l3_y)), radius=4, color=(0, 255, 255), thickness=-1)
 
         txt_bk_color = (_COLORS[cls_id] * 255 * 0.7).astype(np.uint8).tolist()
         cv2.rectangle(
@@ -198,7 +204,8 @@ def annot_overlay(img, dets, xyxy=True):
                 w=det[2]   #width
                 h=det[3]  #height
                 rad=det[4]  #radian
-                category_id=int(det[-1])
+                category_id=int(det[5])
+                landmarks=det[6:6+2*3]
             else:
                 cx=det[1]    #x
                 cy=det[2]    #y
@@ -206,6 +213,7 @@ def annot_overlay(img, dets, xyxy=True):
                 h=det[4]  #height
                 category_id=int(det[0])
                 rad = np.arctan2(det[5],det[6])
+                landmarks=det[7:7+2*3]
             seg = B.rotate_box([cx,cy,w,h,rad])
             
             sx1=seg[0]
@@ -216,12 +224,24 @@ def annot_overlay(img, dets, xyxy=True):
             sy3=seg[5]
             sx4=seg[6]
             sy4=seg[7]
+
+            l1_x=landmarks[0]
+            l1_y=landmarks[1]
+            l2_x=landmarks[2]
+            l2_y=landmarks[3]
+            l3_x=landmarks[4]
+            l3_y=landmarks[5]
             try:
                 #cv2.rectangle(img, (int(x1),int(y1)), (int(x2),int(y2)), category_color[category_id], 2)
-                img=cv2.line(img,(int(sx1),int(sy1)),(int(sx2),int(sy2)),category_color[category_id],2)
-                img=cv2.line(img,(int(sx2),int(sy2)),(int(sx3),int(sy3)),category_color[category_id],2)
-                img=cv2.line(img,(int(sx3),int(sy3)),(int(sx4),int(sy4)),category_color[category_id],2)
-                img=cv2.line(img,(int(sx4),int(sy4)),(int(sx1),int(sy1)),category_color[category_id],2)
+                cv2.line(img,(int(sx1),int(sy1)),(int(sx2),int(sy2)),category_color[category_id],2)
+                cv2.line(img,(int(sx2),int(sy2)),(int(sx3),int(sy3)),category_color[category_id],2)
+                cv2.line(img,(int(sx3),int(sy3)),(int(sx4),int(sy4)),category_color[category_id],2)
+                cv2.line(img,(int(sx4),int(sy4)),(int(sx1),int(sy1)),category_color[category_id],2)
+
+                cv2.circle(img, (int(l1_x),int(l1_y)), radius=4, color=(0, 0, 255), thickness=-1)
+                cv2.circle(img, (int(l2_x),int(l2_y)), radius=4, color=(0, 255, 0), thickness=-1)
+                cv2.circle(img, (int(l3_x),int(l3_y)), radius=4, color=(0, 255, 255), thickness=-1)
+
                 cv2.putText(img, category_dic[category_id], (int(sx1-10),int(sy1-10)), cv2.FONT_HERSHEY_COMPLEX_SMALL, 0.8, category_color[category_id], 1)
                 cv2.putText(img, "{:.2f}".format(rad), (int(cx-20),int(cy-30)), cv2.FONT_HERSHEY_COMPLEX_SMALL, 1.0, category_color[category_id], 2)
             except:

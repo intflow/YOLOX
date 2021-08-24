@@ -114,49 +114,62 @@ def random_perspective(
     if n:
         # warp points
         xy = np.ones((n * 4, 3))
+        lm = np.ones((n * 3, 3))
         pts4 = targets[:, [0, 1, 2, 3, 0, 3, 2, 1]]
+        pts6 = targets[:, [6, 7, 8, 9, 10, 11]]
         ###pts4 = B.rotate_boxes(targets[:,:5])
         xy[:, :2] = pts4.reshape(
             n * 4, 2
         )  # x1y1, x2y2, x1y2, x2y1
+        lm[:, :2] = pts6.reshape(
+            n * 3, 2
+        ) 
         xy = xy @ M.T  # transform
+        lm = lm @ M.T  # transform
         if perspective:
             xy = (xy[:, :2] / xy[:, 2:3]).reshape(n, 8)  # rescale
+            lm = (lm[:, :2] / lm[:, 2:3]).reshape(n, 6)  # rescale
         else:  # affine
             xy = xy[:, :2].reshape(n, 8)
+            lm = lm[:, :2].reshape(n, 6)
 
         ### create new boxes
         x = xy[:, [0, 2, 4, 6]]
         y = xy[:, [1, 3, 5, 7]]
         xy = np.concatenate((x.min(1), y.min(1), x.max(1), y.max(1))).reshape(4, n).T
-
-        ###rbboxes = []
-        ###for corners in xy:
-        ###    rbbox = B.corners2rotatedbbox(corners)
-        ###    rbboxes.append(rbbox)
-        ###xy = np.array(rbboxes)
+        
+        ### create new landmarks
+        lmx = lm[:, [0, 2, 4]]
+        lmy = lm[:, [1, 3, 5]]
+        lm = np.concatenate((lmx[:,0], lmy[:,0], lmx[:,1], lmy[:,1], lmx[:,2], lmy[:,2])).reshape(6, n).T
 
         # clip boxes
         xy[:, [0, 2]] = xy[:, [0, 2]].clip(0, width)
         xy[:, [1, 3]] = xy[:, [1, 3]].clip(0, height)
+        
+        lm[:, [0, 2, 4]] = lm[:, [0, 2, 4]].clip(0, width)
+        lm[:, [1, 3, 5]] = lm[:, [1, 3, 5]].clip(0, height)
 
         # filter candidates
         i = box_candidates(box1=targets[:, :4].T * s, box2=xy.T)
         targets = targets[i]
         targets[:, :4] = xy[i]
+        targets[:, 6:6+2*3] = lm[i]
         ##targets[:, :5] = xy[i]
 
     return img, targets
 
 
-def _mirror(image, boxes, rads):
+def _mirror(image, boxes, rads, landmarks):
     _, width, _ = image.shape
     if random.randrange(2):
         image = image[:, ::-1]
         boxes = boxes.copy()
         boxes[:, 0::2] = width - boxes[:, 2::-2]
         rads *= -1
-    return image, boxes, rads
+        landmarks = landmarks.copy()
+        landmarks[:, 0::2] = width - landmarks[:, 4::-2]
+    return image, boxes, rads, landmarks
 
 
 def preproc(img, input_size, swap=(2, 0, 1)):
@@ -186,8 +199,9 @@ class TrainTransform:
         boxes = targets[:, :4].copy()
         rads = targets[:, 4].copy()
         labels = targets[:, 5].copy()
+        landmarks = targets[:, 6:6+2*3].copy()
         if len(boxes) == 0:
-            targets = np.zeros((self.max_labels, 7), dtype=np.float32)
+            targets = np.zeros((self.max_labels, 7+6), dtype=np.float32)
             image, r_o = preproc(image, input_dim)
             return image, targets
 
@@ -197,26 +211,30 @@ class TrainTransform:
         boxes_o = targets_o[:, :4]
         rads_o = targets_o[:, 4]
         labels_o = targets_o[:, 5]
-        # bbox_o: [xyxy] to [c_x,c_y,w,h]
+        landmarks_o = targets_o[:, 6:6+2*3]
         boxes_o = xyxy2cxcywh(boxes_o)
 
         augment_hsv(image)
-        image_t, boxes, rads = _mirror(image, boxes, rads)
+        image_t, boxes, rads, landmarks = _mirror(image, boxes, rads, landmarks)
         height, width, _ = image_t.shape
         image_t, r_ = preproc(image_t, input_dim)
         # boxes [xyxy] 2 [cx,cy,w,h]
         boxes = xyxy2cxcywh(boxes)
         boxes *= r_
+        landmarks *= r_
 
         mask_b = np.minimum(boxes[:, 2], boxes[:, 3]) > 8
         boxes_t = boxes[mask_b]
         rads_t = rads[mask_b]
         labels_t = labels[mask_b]
+        landmarks_t = landmarks[mask_b]
 
         if len(boxes_t) == 0:
             image_t, r_o = preproc(image_o, input_dim)
             boxes_o *= r_o
+            landmarks_o *= r_o
             boxes_t = boxes_o
+            landmarks_t = landmarks_o
             rads_t = rads_o
             labels_t = labels_o
 
@@ -224,8 +242,8 @@ class TrainTransform:
         rads_t = np.expand_dims(rads_t, 1)
         rads_t = np.concatenate((np.sin(rads_t), np.cos(rads_t)),axis=-1)
         
-        targets_t = np.hstack((labels_t, boxes_t, rads_t))
-        padded_labels = np.zeros((self.max_labels, 7))
+        targets_t = np.hstack((labels_t, boxes_t, rads_t, landmarks_t))
+        padded_labels = np.zeros((self.max_labels, 7+2*3))
         padded_labels[range(len(targets_t))[: self.max_labels]] = targets_t[
             : self.max_labels
         ]

@@ -150,7 +150,7 @@ class INTFLOWEvaluator:
 
             bboxes = output[:, 0:4]
             bboxes /= scale
-            rads = output[:, -1].unsqueeze(-1)
+            rads = output[:, 7].unsqueeze(-1)
             bboxes = xyxy2xywh(bboxes)
             segments = rotate_boxes(torch.cat((bboxes,rads),dim=-1).numpy())
             cls = output[:, 6]
