@@ -1,4 +1,4 @@
 #!/bin/bash
 
-python3 tools/train.py -expn yolox_oad_e2e_s-intflow_total_1K -n yolox_oad_e2e_s -f exps/intflow_oad__total_1K/yolox_intflow_s.py -d 4 -b 32 --cache \
--c /data/pretrained/hcow/yolox_intflow_s-intflow_total_100K.pth.tar
+python3 tools/train.py -expn yolox_s_oad_lm3__intflow_total_1K -n yolox_s_oad_lm3 -f exps/yolox_oad_lm3__intflow_total_1K/yolox_s_oad_lm3.py -d 4 -b 32 --cache --fp16 \
+-c /data/pretrained/yolox_s.pth
