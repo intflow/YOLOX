@@ -24,11 +24,11 @@ def make_parser():
     parser.add_argument(
         "--demo", default="image", help="demo type, eg. image, video and webcam"
     )
-    parser.add_argument("-expn", "--experiment-name", type=str, default="yolox_oad_e2e_s-intflow_total_1K")
+    parser.add_argument("-expn", "--experiment-name", type=str, default="yolox_oad_lm3_e2e_s-intflow_total_1K")
     parser.add_argument("-n", "--name", type=str, default="yolox_oad_e2e_s", help="model name")
 
     parser.add_argument(
-        "--path", default="./assets/milkcow.jpg", help="path to images or video"
+        "--path", default="./assets/pig.jpg", help="path to images or video"
     )
     parser.add_argument("--camid", type=int, default=0, help="webcam demo camera id")
     parser.add_argument(
@@ -42,11 +42,11 @@ def make_parser():
     parser.add_argument(
         "-f",
         "--exp_file",
-        default="exps/intflow_oad__total_1K/yolox_intflow_s.py",
+        default="exps/intflow_oad_lm3__total_1K/yolox_intflow_s.py",
         type=str,
         help="pls input your expriment description file",
     )
-    parser.add_argument("-c", "--ckpt", default="YOLOX_outputs/yolox_oad_e2e_s-intflow_total_1K/best_ckpt.pth", type=str, help="ckpt for eval")
+    parser.add_argument("-c", "--ckpt", default="YOLOX_outputs/yolox_oad_lm3_e2e_s-intflow_total_1K/best_ckpt.pth", type=str, help="ckpt for eval")
     parser.add_argument(
         "--device",
         default="gpu",
@@ -59,7 +59,7 @@ def make_parser():
     parser.add_argument(
         "--fp16",
         dest="fp16",
-        default=True,
+        default=False,
         action="store_true",
         help="Adopting mix precision evaluating.",
     )

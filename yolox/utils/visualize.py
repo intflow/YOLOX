@@ -28,7 +28,7 @@ def vis(img, boxes, rads, scores, cls_ids, landmarks, conf=0.5, class_names=None
         x0 = int(cx - w/2)
         y0 = int(cy - h/2)
         [sx1, sy1, sx2, sy2, sx3, sy3, sx4, sy4] = B.rotate_box([cx,cy,w,h,rad])
-        [l1_x, l1_y, l2_x, l2_y, l3_x, l3_y] = l1_x=landmarks
+        [l1_x, l1_y, l2_x, l2_y, l3_x, l3_y] = landmark
 
         color = (_COLORS[cls_id] * 255).astype(np.uint8).tolist()
         text = '{}:{:.1f}%'.format(class_names[cls_id], score * 100)
