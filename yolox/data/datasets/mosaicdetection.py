@@ -253,7 +253,7 @@ class MosaicDetection(Dataset):
         cp_bboxes_transformed_np[:, 1::2] = np.clip(
             cp_bboxes_transformed_np[:, 1::2] - y_offset, 0, target_h
         )
-        keep_list = box_candidates(cp_bboxes_origin_np.T, cp_bboxes_transformed_np.T, 5)
+        keep_list = box_candidates(cp_bboxes_origin_np.T, cp_bboxes_transformed_np.T, 10)
         
         cp_landmarks_transformed_np = cp_landmarks_origin_np.copy()
         cp_landmarks_transformed_np[:, 0::2] = np.clip(

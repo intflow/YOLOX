@@ -34,7 +34,7 @@ def augment_hsv(img, hgain=0.015, sgain=0.7, vgain=0.4):
     cv2.cvtColor(img_hsv, cv2.COLOR_HSV2BGR, dst=img)  # no return needed
 
 
-def box_candidates(box1, box2, wh_thr=2, ar_thr=20, area_thr=0.2):
+def box_candidates(box1, box2, wh_thr=2, ar_thr=10, area_thr=0.3):
     # box1(4,n), box2(4,n)
     # Compute candidate boxes which include follwing 5 things:
     # box1 before augment, box2 after augment, wh_thr (pixels), aspect_ratio_thr, area_ratio
@@ -151,7 +151,7 @@ def random_perspective(
         lm[:, [1, 3, 5]] = lm[:, [1, 3, 5]].clip(0, height)
 
         # filter candidates
-        i = box_candidates(box1=targets[:, :4].T * s, box2=xy.T)
+        i = box_candidates(box1=targets[:, :4].T * s, box2=xy.T, wh_thr=10)
         targets = targets[i]
         targets[:, :4] = xy[i]
         targets[:, 6:6+2*3] = lm[i]
