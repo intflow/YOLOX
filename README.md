@@ -162,4 +162,5 @@ deepstream-app -c deepstream_app_config.txt
 
 ### yolox-s model download
 [torch](https://github.com/Megvii-BaseDetection/storage/releases/download/0.0.1/yolox_s.pth)
+
 [onnx](https://github.com/Megvii-BaseDetection/storage/releases/download/0.0.1/yolox_s.onnx)
