@@ -16,13 +16,13 @@ class Exp(MyExp):
         self.width = 0.50
 # ---------------- dataloader config ---------------- #
         # set worker to 4 for shorter dataloader init time
-        self.data_num_workers = 8
+        self.data_num_workers = 1
         self.input_size = (640, 640)
         self.random_size = (14, 26)
-        self.train_path = '/data/EdgeFarm_cow/intflow_total_100K'
-        self.val_path = '/data/EdgeFarm_cow/intflow_total_1K'
-        self.train_ann = "label_odtk_025pi_center.json"
-        self.val_ann = "label_coco_bbox.json"
+        self.train_path = '/data/CrowdHuman/CrowdHuman_train'
+        self.val_path = '/data/CrowdHuman/CrowdHuman_val'
+        self.train_ann = "/data/CrowdHuman/label_odtk_025pi_center_train.json"
+        self.val_ann = "/data/CrowdHuman/label_odtk_025pi_center_val.json"
 
         # --------------- transform config ----------------- #
         self.degrees = 10.0
@@ -146,17 +146,3 @@ class Exp(MyExp):
         val_loader = torch.utils.data.DataLoader(valdataset, **dataloader_kwargs)
 
         return val_loader
-
-    def get_evaluator(self, batch_size, is_distributed, testdev=False):
-        from yolox.evaluators import INTFLOWEvaluator
-
-        val_loader = self.get_eval_loader(batch_size, is_distributed, testdev=testdev)
-        evaluator = INTFLOWEvaluator(
-            dataloader=val_loader,
-            img_size=self.test_size,
-            confthre=self.test_conf,
-            nmsthre=self.nmsthre,
-            num_classes=self.num_classes,
-            testdev=testdev,
-        )
-        return evaluator

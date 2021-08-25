@@ -13,11 +13,11 @@ sys.path.append(p_folder)
 sys.path.append(pp_folder)
 import yolox.utils.boxes as B
 
-root = '/data/EdgeFarm_cow/intflow_total_100K_2'
+root = '/data/CrowdHuman/'
 #root = '/data/EdgeFarm_cow/intflow_total_1K'
-img_folder_path = os.path.join(root, 'img_mask')
-train_label_path = os.path.join(root, 'label')
-train_label_merge_out = os.path.join(root, 'label_odtk_025pi_center.json')
+img_folder_path = os.path.join(root, 'CrowdHuman_train')
+train_label_path = os.path.join(root, 'label_train')
+train_label_merge_out = os.path.join(root, 'label_odtk_025pi_center_train.json')
 
 mode = 1   #  0:train_data,   1:validation_data
 
@@ -40,7 +40,7 @@ def _nz(x):
     return x
 
 def annot_overlay_rbbox(img, dets):
-        category_dic={0:'Cow',1:'Pig'} #class name
+        category_dic={0:'Cow',1:'Pig',2:'Person'} #class name
         pose_dic={0:'Standing',1:'Sitting'} #pose name
         category_color={0:(255,0,0),1:(0,255,0)} #class color
         pose_color={0:(255,255,255),1:(0,255,255)} #pose color
@@ -212,8 +212,8 @@ for num1, each_file in enumerate(tqdm.tqdm(json_list)):
         dets.append(det)
 
     ## Write overlay image for debug
-    img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
-    img_overlay = annot_overlay_rbbox(img, dets)
+    # img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
+    # img_overlay = annot_overlay_rbbox(img, dets)
     ##cv2.imwrite('tmp_figs2/' + str(id) + '.jpg', img_overlay)
 
 #categories = [
@@ -247,6 +247,10 @@ categories = [
     {
         "id": 1,
         "name": "pig"
+    },
+    {
+        "id": 2,
+        "name":"person"
     }
 ]
 

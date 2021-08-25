@@ -17,7 +17,7 @@ sudo docker pull intflow/yolox:dev_1.0_30xx_ubuntu18.04
 
 #Run Dockers for CenterNet+DeepSORT
 sudo docker run --name yolox \
---gpus all --rm -p 6434:6434 \
+--gpus all --rm -p 2433:2433 \
 --mount type=bind,src=/home/intflow/works,dst=/works \
 --mount type=bind,src=/DL_data_big,dst=/data \
 --net=host \

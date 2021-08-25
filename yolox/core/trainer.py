@@ -118,7 +118,7 @@ class Trainer:
             iter_time=iter_end_time - iter_start_time,
             data_time=data_end_time - iter_start_time,
             lr=lr,
-            **outputs,
+            **outputs
         )
 
     def before_train(self):

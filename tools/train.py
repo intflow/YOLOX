@@ -17,8 +17,8 @@ import warnings
 
 def make_parser():
     parser = argparse.ArgumentParser("YOLOX train parser")
-    parser.add_argument("-expn", "--experiment-name", type=str, default="yolox_e2e_s-intflow_total_1K(3)")
-    parser.add_argument("-n", "--name", type=str, default="yolox_e2e_intflow_s", help="model name")
+    parser.add_argument("-expn", "--experiment-name", type=str, default="crowdhuman")
+    parser.add_argument("-n", "--name", type=str, default="crowdhuman", help="model name")
 
     # distributed
     parser.add_argument(
@@ -40,7 +40,7 @@ def make_parser():
     parser.add_argument(
         "-f",
         "--exp_file",
-        default='exps/intflow_total_1K/yolox_intflow_s.py',
+        default='/works/YOLOX/exps/intflow_total_1K/crowdhuman.py',
         type=str,
         help="plz input your expriment description file",
     )
@@ -71,6 +71,7 @@ def make_parser():
         action="store_true",
         help="Adopting mix precision training.",
     )
+    
     parser.add_argument(
         "-o",
         "--occupy",
