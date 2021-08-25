@@ -8,8 +8,12 @@ vscode debugmode를 사용하기위해 python의 argument의 경로들이 절대
 
 
 deepstream을 위해 
-torch model을 onnx로 변환하고 onnx모델읠 tensorRT engine으로 변환후 
-yolox-deepstream에서 deepstream을 실행하여야한다.
+1. step] torch model을 onnx로 변환하고 [torch2onnx]
+
+2. step] onnx모델읠 tensorRT engine으로 변환후 [onnx2trt]
+
+3. step] yolox-deepstream에서 deepstream을 실행하여야한다.[deepstream]
+
 
 
 ## Quick Start
@@ -20,7 +24,7 @@ yolox-deepstream에서 deepstream을 실행하여야한다.
 <details>
 <summary>torch2onnx</summary>
 
-# Convert tourch Model to ONNX
+# Convert torch Model to ONNX
 First, you should move to <YOLOX_HOME> by:
 ```shell
 pip install loguru
