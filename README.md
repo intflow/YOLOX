@@ -1,7 +1,5 @@
 
 
-
-
 ## Introduction
 yolox deepstream을 실행하기 위한 repo이다.
 vscode debugmode를 사용하기위해 python의 argument의 경로들이 절대경로 이므로 경로 오류시 본인 경로에 맞게 설정하고 run 하길 바란다.
@@ -14,7 +12,7 @@ deepstream을 위해
 
 3. step] yolox-deepstream에서 deepstream을 실행하여야한다.[deepstream]
 
-
+docker pull intflow/yolox:tensorrt
 
 ## Quick Start
 
