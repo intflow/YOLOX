@@ -13,8 +13,8 @@ find_package(CUDA REQUIRED)
 include_directories(${PROJECT_SOURCE_DIR}/include)
 # include and link dirs of cuda and tensorrt, you need adapt them if yours are different
 # cuda
-include_directories(/data/cuda/cuda-10.2/cuda/include)
-link_directories(/data/cuda/cuda-10.2/cuda/lib64)
+include_directories(/usr/local/cuda-11.1/include)
+link_directories(/usr/local/cuda-11.1/lib64)
 # cudnn
 include_directories(/data/cuda/cuda-10.2/cudnn/v8.0.4/include)
 link_directories(/data/cuda/cuda-10.2/cudnn/v8.0.4/lib64)

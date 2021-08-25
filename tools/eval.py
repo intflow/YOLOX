@@ -35,7 +35,7 @@ def make_parser():
     )
     parser.add_argument("-b", "--batch-size", type=int, default=16, help="batch size")
     parser.add_argument(
-        "-d", "--devices", default=4, type=int, help="device for training"
+        "-d", "--devices", default=1, type=int, help="device for training"
     )
     parser.add_argument(
         "--local_rank", default=0, type=int, help="local rank for dist training"
@@ -49,11 +49,11 @@ def make_parser():
     parser.add_argument(
         "-f",
         "--exp_file",
-        default="exps/intflow_total_1K/yolox_intflow_s.py",
+        default="exps/intflow_total_100K/yolox_intflow_s.py",
         type=str,
         help="pls input your expriment description file",
     )
-    parser.add_argument("-c", "--ckpt", default="YOLOX_outputs/yolox_e2e_s-intflow_total_1K(2)/best_ckpt.pth", type=str, help="ckpt for eval")
+    parser.add_argument("-c", "--ckpt", default="/works/YOLOX/yolox_intflow_s-intflow_total_100K.pth.tar", type=str, help="ckpt for eval")
     parser.add_argument("--conf", default=0.4, type=float, help="test conf")
     parser.add_argument("--nms", default=0.45, type=float, help="test nms threshold")
     parser.add_argument("--tsize", default=640, type=int, help="test img size")

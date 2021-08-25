@@ -18,7 +18,7 @@ import os
 def make_parser():
     parser = argparse.ArgumentParser("YOLOX onnx deploy")
     parser.add_argument(
-        "--output-name", type=str, default="yolox.onnx", help="output name of models"
+        "--output-name", type=str, default="yolox_intflow_s-intflow_total_100K.onnx", help="output name of models"
     )
     parser.add_argument(
         "--input", default="images", type=str, help="input node name of onnx model"
@@ -33,13 +33,13 @@ def make_parser():
     parser.add_argument(
         "-f",
         "--exp_file",
-        default=None,
+        default="/works/YOLOX/exps/intflow_total_100K/yolox_intflow_s.py",
         type=str,
         help="expriment description file",
     )
-    parser.add_argument("-expn", "--experiment-name", type=str, default=None)
-    parser.add_argument("-n", "--name", type=str, default=None, help="model name")
-    parser.add_argument("-c", "--ckpt", default=None, type=str, help="ckpt path")
+    parser.add_argument("-expn", "--experiment-name", type=str, default="yolox_e2e_intflow_s")
+    parser.add_argument("-n", "--name", type=str, default="yolox_e2e_intflow_s", help="model name")
+    parser.add_argument("-c", "--ckpt", default="/works/YOLOX/yolox_intflow_s-intflow_total_100K.pth.tar", type=str, help="ckpt path")
     parser.add_argument(
         "opts",
         help="Modify config options using the command-line",

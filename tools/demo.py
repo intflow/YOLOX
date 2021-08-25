@@ -25,11 +25,11 @@ def make_parser():
     parser.add_argument(
         "--demo", default="image", help="demo type, eg. image, video and webcam"
     )
-    parser.add_argument("-expn", "--experiment-name", type=str, default="yolox_e2e_s-intflow_total_1K")
-    parser.add_argument("-n", "--name", type=str, default="yolox_e2e_s-intflow_total_1K", help="model name")
+    parser.add_argument("-expn", "--experiment-name", type=str, default="yolox_e2e_intflow_s")
+    parser.add_argument("-n", "--name", type=str, default="yolox_e2e_intflow_s", help="model name")
 
     parser.add_argument(
-        "--path", default="./assets/cow.jpg", help="path to images or video"
+        "--path", default="/works/YOLOX/assets/sample_pig.jpg", help="path to images or video"
     )
     parser.add_argument("--camid", type=int, default=0, help="webcam demo camera id")
     parser.add_argument(
@@ -43,11 +43,11 @@ def make_parser():
     parser.add_argument(
         "-f",
         "--exp_file",
-        default="exps/intflow_total_1K/yolox_intflow_s.py",
+        default="/works/YOLOX/exps/intflow_total_100K/yolox_intflow_s.py",
         type=str,
         help="pls input your expriment description file",
     )
-    parser.add_argument("-c", "--ckpt", default="YOLOX_outputs/yolox_e2e_s-intflow_total_1K/best_ckpt.pth", type=str, help="ckpt for eval")
+    parser.add_argument("-c", "--ckpt", default="/works/YOLOX/demo/TensorRT/cpp/model_trt.engine", type=str, help="ckpt for eval")
     parser.add_argument(
         "--device",
         default="gpu",
@@ -74,7 +74,7 @@ def make_parser():
     parser.add_argument(
         "--trt",
         dest="trt",
-        default=False,
+        default=True,
         action="store_true",
         help="Using TensorRT model for testing.",
     )

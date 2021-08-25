@@ -23,11 +23,11 @@ def make_parser():
     parser.add_argument(
         "-f",
         "--exp_file",
-        default=None,
+        default="/works/YOLOX/exps/intflow_total_100K_2/yolox_intflow_s.py",
         type=str,
         help="pls input your expriment description file",
     )
-    parser.add_argument("-c", "--ckpt", default=None, type=str, help="ckpt path")
+    parser.add_argument("-c", "--ckpt", default="/works/YOLOX/yolox_intflow_s-intflow_total_100K.pth.tar", type=str, help="ckpt path")
     return parser
 
 
@@ -65,7 +65,7 @@ def main():
     torch.save(model_trt.state_dict(), os.path.join(file_name, "model_trt.pth"))
     logger.info("Converted TensorRT model done.")
     engine_file = os.path.join(file_name, "model_trt.engine")
-    engine_file_demo = os.path.join("demo", "TensorRT", "cpp", "model_trt.engine")
+    engine_file_demo = "/works/YOLOX/demo/TensorRT/cpp/model_trt.engine"
     with open(engine_file, "wb") as f:
         f.write(model_trt.engine.serialize())
 
