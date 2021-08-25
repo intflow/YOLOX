@@ -133,11 +133,12 @@ Then run the demo:
 </details>
 
 
-<details open>
+<details>
 <summary>deepstream</summary>
 
 # deepstream
 
+```
 cd YOLO-deepstream/nvdsinfer_custom_impl_yolox/
 
 make
