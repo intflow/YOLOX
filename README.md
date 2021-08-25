@@ -12,6 +12,8 @@ deepstream을 위해
 
 3. step] yolox-deepstream에서 deepstream을 실행하여야한다.[deepstream]
 
+#### docker 환경
+
 docker pull intflow/yolox:tensorrt
 
 ## Quick Start
