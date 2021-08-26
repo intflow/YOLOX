@@ -206,7 +206,7 @@ static void decode_outputs(float* prob, std::vector<Object>& objects, float scal
         std::vector<GridAndStride> grid_strides;
         generate_grids_and_stride(INPUT_W, strides, grid_strides);
         generate_yolox_proposals(grid_strides, prob,  BBOX_CONF_THRESH, proposals);
-        std::cout << "num of boxes before nms: " << proposals.size() << std::endl;
+        // std::cout << "num of boxes before nms: " << proposals.size() << std::endl;
 
         qsort_descent_inplace(proposals);
 
@@ -216,7 +216,7 @@ static void decode_outputs(float* prob, std::vector<Object>& objects, float scal
 
         int count = picked.size();
 
-        std::cout << "num of boxes: " << count << std::endl;
+        // std::cout << "num of boxes: " << count << std::endl;
 
         objects.resize(count);
         for (int i = 0; i < count; i++)
