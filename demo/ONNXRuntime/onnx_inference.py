@@ -42,7 +42,7 @@ def make_parser():
         "-s",
         "--score_thr",
         type=float,
-        default=0.1,
+        default=0.4,
         help="Score threshould to filter the result.",
     )
     parser.add_argument(

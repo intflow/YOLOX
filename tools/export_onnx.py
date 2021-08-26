@@ -33,7 +33,7 @@ def make_parser():
     parser.add_argument(
         "-f",
         "--exp_file",
-        default="/works/YOLOX/exps/intflow_total_100K/yolox_intflow_s.py",
+        default="/works/YOLOX/exps/intflow_total_1K/yolox_intflow_s.py",
         type=str,
         help="expriment description file",
     )

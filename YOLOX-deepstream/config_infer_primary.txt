@@ -5,10 +5,11 @@ net-scale-factor=1
 # 0:RGB 1:BGR
 model-color-format=0
 
-model-engine-file=/works/YOLOX/YOLOX-deepstream/yolox_s.engine
+#model-engine-file=/works/YOLOX/YOLOX-deepstream/yolox_s.engine
+model-engine-file=/works/YOLOX/yolox_intflow_s-intflow_total_100K.engine
 
 labelfile-path=labels.txt
-num-detected-classes=80
+num-detected-classes=2
 
 interval=0
 gie-unique-id=1
