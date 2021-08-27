@@ -29,9 +29,10 @@ class DataPrefetcher:
         try:
             self.next_input, self.next_target, _, _ = next(self.loader)
         except StopIteration:
-            self.next_input = None
-            self.next_target = None
-            return
+            pass
+            # self.next_input = None
+            # self.next_target = None
+            # return
 
         with torch.cuda.stream(self.stream):
             self.input_cuda()

@@ -19,10 +19,10 @@ class Exp(MyExp):
         self.data_num_workers = 8
         self.input_size = (640, 640)
         self.random_size = (14, 26)
-        self.train_path = '/data/EdgeFarm_cow/intflow_total_1K'
-        self.val_path = '/data/EdgeFarm_cow/intflow_total_1K'
+        self.train_path = '/data/CrowdHuman/CrowdHuman_val'
+        self.val_path = '/data/CrowdHuman/CrowdHuman_val'
         self.train_ann = "label_odtk_025pi_center.json"
-        self.val_ann = "label_coco_bbox.json"
+        self.val_ann = "label_odtk_025pi_center.json"
 
         # --------------- transform config ----------------- #
         self.degrees = 10.0
@@ -35,7 +35,7 @@ class Exp(MyExp):
 
         # --------------  training config --------------------- #
         self.warmup_epochs = 5
-        self.max_epoch = 300
+        self.max_epoch = 3
         self.warmup_lr = 0
         self.basic_lr_per_img = 0.01 / 64.0
         self.scheduler = "yoloxwarmcos"
@@ -45,8 +45,8 @@ class Exp(MyExp):
 
         self.weight_decay = 5e-4
         self.momentum = 0.9
-        self.print_interval = 10
-        self.eval_interval = 5
+        self.print_interval = 100
+        self.eval_interval = 2
         self.exp_name = os.path.split(os.path.realpath(__file__))[1].split(".")[0]
 
         # -----------------  testing config ------------------ #
@@ -65,7 +65,7 @@ class Exp(MyExp):
         dataset = INTFLOWDataset(
                 data_dir=self.train_path,
                 json_file=self.train_ann,
-                name="img_mask",
+                name="img",
                 img_size=self.input_size,
                 preproc=TrainTransform(
                     rgb_means=(0.485, 0.456, 0.406),
@@ -120,7 +120,7 @@ class Exp(MyExp):
         valdataset = INTFLOWDataset(
             data_dir=self.val_path,
             json_file=self.val_ann,
-            name="img_mask",
+            name="img",
             img_size=self.input_size,
             preproc=ValTransform(
                 rgb_means=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)

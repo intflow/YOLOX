@@ -16,13 +16,13 @@ class Exp(MyExp):
         self.width = 0.50
 # ---------------- dataloader config ---------------- #
         # set worker to 4 for shorter dataloader init time
-        self.data_num_workers = 1
+        self.data_num_workers = 8
         self.input_size = (640, 640)
         self.random_size = (14, 26)
         self.train_path = '/data/CrowdHuman/CrowdHuman_train'
         self.val_path = '/data/CrowdHuman/CrowdHuman_val'
-        self.train_ann = "/data/CrowdHuman/label_odtk_025pi_center_train.json"
-        self.val_ann = "/data/CrowdHuman/label_odtk_025pi_center_val.json"
+        self.train_ann = "label_odtk_025pi_center.json"
+        self.val_ann = "label_odtk_025pi_center.json"
 
         # --------------- transform config ----------------- #
         self.degrees = 10.0
@@ -35,7 +35,7 @@ class Exp(MyExp):
 
         # --------------  training config --------------------- #
         self.warmup_epochs = 5
-        self.max_epoch = 300
+        self.max_epoch = 200
         self.warmup_lr = 0
         self.basic_lr_per_img = 0.01 / 64.0
         self.scheduler = "yoloxwarmcos"
@@ -46,7 +46,7 @@ class Exp(MyExp):
         self.weight_decay = 5e-4
         self.momentum = 0.9
         self.print_interval = 10
-        self.eval_interval = 5
+        self.eval_interval = 2
         self.exp_name = os.path.split(os.path.realpath(__file__))[1].split(".")[0]
 
         # -----------------  testing config ------------------ #
@@ -65,7 +65,7 @@ class Exp(MyExp):
         dataset = INTFLOWDataset(
                 data_dir=self.train_path,
                 json_file=self.train_ann,
-                name="img_mask",
+                name="img",
                 img_size=self.input_size,
                 preproc=TrainTransform(
                     rgb_means=(0.485, 0.456, 0.406),
@@ -120,7 +120,7 @@ class Exp(MyExp):
         valdataset = INTFLOWDataset(
             data_dir=self.val_path,
             json_file=self.val_ann,
-            name="img_mask",
+            name="img",
             img_size=self.input_size,
             preproc=ValTransform(
                 rgb_means=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)
@@ -146,3 +146,17 @@ class Exp(MyExp):
         val_loader = torch.utils.data.DataLoader(valdataset, **dataloader_kwargs)
 
         return val_loader
+
+    def get_evaluator(self, batch_size, is_distributed, testdev=False):
+        from yolox.evaluators import INTFLOWEvaluator
+
+        val_loader = self.get_eval_loader(batch_size, is_distributed, testdev=testdev)
+        evaluator = INTFLOWEvaluator(
+            dataloader=val_loader,
+            img_size=self.test_size,
+            confthre=self.test_conf,
+            nmsthre=self.nmsthre,
+            num_classes=self.num_classes,
+            testdev=testdev,
+        )
+        return evaluator
