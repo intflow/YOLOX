@@ -28,7 +28,7 @@ def make_parser():
     parser.add_argument("-n", "--name", type=str, default="yolox_oad_e2e_s", help="model name")
 
     parser.add_argument(
-        "--path", default="./assets/pig.jpg", help="path to images or video"
+        "--path", default="/works/YOLOX/assets/sample_cow.jpg", help="path to images or video"
     )
     parser.add_argument("--camid", type=int, default=0, help="webcam demo camera id")
     parser.add_argument(
@@ -42,11 +42,11 @@ def make_parser():
     parser.add_argument(
         "-f",
         "--exp_file",
-        default="exps/intflow_oad_lm3__total_1K/yolox_intflow_s.py",
+        default="/works/YOLOX/exps/intflow_oad_lm3__intflow_total_1K/yolox_s_oad_lm3.py",
         type=str,
         help="pls input your expriment description file",
     )
-    parser.add_argument("-c", "--ckpt", default="YOLOX_outputs/yolox_oad_lm3_e2e_s-intflow_total_1K/best_ckpt.pth", type=str, help="ckpt for eval")
+    parser.add_argument("-c", "--ckpt", default="/DL_data_big/pretrained/hcow/yolox_s_oad_lm3__intflow_total_100K_2_test1.pth", type=str, help="ckpt for eval")
     parser.add_argument(
         "--device",
         default="gpu",

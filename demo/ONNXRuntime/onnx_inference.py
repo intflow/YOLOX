@@ -21,14 +21,14 @@ def make_parser():
         "-m",
         "--model",
         type=str,
-        default="yolox.onnx",
+        default="/works/YOLOX/yolox_s_oad_lm3__intflow_total_100K_2_test1.onnx",
         help="Input your onnx model.",
     )
     parser.add_argument(
         "-i",
         "--image_path",
         type=str,
-        default='test_image.png',
+        default='/works/YOLOX/assets/sample_cow.jpg',
         help="Path to your input image.",
     )
     parser.add_argument(
@@ -74,7 +74,7 @@ if __name__ == '__main__':
 
     boxes = predictions[:, :4]
     scores = predictions[:, 4:5] * predictions[:, 5:]
-
+    
     boxes_xyxy = np.ones_like(boxes)
     boxes_xyxy[:, 0] = boxes[:, 0] - boxes[:, 2]/2.
     boxes_xyxy[:, 1] = boxes[:, 1] - boxes[:, 3]/2.

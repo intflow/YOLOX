@@ -17,7 +17,7 @@ from yolox.utils import replace_module
 def make_parser():
     parser = argparse.ArgumentParser("YOLOX onnx deploy")
     parser.add_argument(
-        "--output-name", type=str, default="yolox.onnx", help="output name of models"
+        "--output-name", type=str, default="yolox_s_oad_lm3__intflow_total_100K_2_test1.onnx", help="output name of models"
     )
     parser.add_argument(
         "--input", default="images", type=str, help="input node name of onnx model"
@@ -32,13 +32,13 @@ def make_parser():
     parser.add_argument(
         "-f",
         "--exp_file",
-        default=None,
+        default="/works/YOLOX/exps/intflow_oad_lm3__intflow_total_1K/yolox_s_oad_lm3.py",
         type=str,
         help="expriment description file",
     )
-    parser.add_argument("-expn", "--experiment-name", type=str, default=None)
-    parser.add_argument("-n", "--name", type=str, default=None, help="model name")
-    parser.add_argument("-c", "--ckpt", default=None, type=str, help="ckpt path")
+    parser.add_argument("-expn", "--experiment-name", type=str, default="yolox_oad_lm3_e2e_s-intflow_total_1K")
+    parser.add_argument("-n", "--name", type=str, default="yolox_oad_e2e_s", help="model name")
+    parser.add_argument("-c", "--ckpt", default="/DL_data_big/pretrained/hcow/yolox_s_oad_lm3__intflow_total_100K_2_test1.pth", type=str, help="ckpt path")
     parser.add_argument(
         "opts",
         help="Modify config options using the command-line",
