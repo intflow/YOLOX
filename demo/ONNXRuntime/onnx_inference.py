@@ -21,28 +21,28 @@ def make_parser():
         "-m",
         "--model",
         type=str,
-        default="/works/YOLOX/yolox_intflow_s-intflow_total_100K.onnx",
+        default="yolox.onnx",
         help="Input your onnx model.",
     )
     parser.add_argument(
         "-i",
         "--image_path",
         type=str,
-        default='/works/YOLOX/assets/sample_pig.jpg',
+        default='test_image.png',
         help="Path to your input image.",
     )
     parser.add_argument(
         "-o",
         "--output_dir",
         type=str,
-        default='/works/YOLOX/demo_output',
+        default='demo_output',
         help="Path to your output directory.",
     )
     parser.add_argument(
         "-s",
         "--score_thr",
         type=float,
-        default=0.4,
+        default=0.3,
         help="Score threshould to filter the result.",
     )
     parser.add_argument(
@@ -64,9 +64,7 @@ if __name__ == '__main__':
 
     input_shape = tuple(map(int, args.input_shape.split(',')))
     origin_img = cv2.imread(args.image_path)
-    mean = (0.485, 0.456, 0.406)
-    std = (0.229, 0.224, 0.225)
-    img, ratio = preprocess(origin_img, input_shape, mean, std)
+    img, ratio = preprocess(origin_img, input_shape)
 
     session = onnxruntime.InferenceSession(args.model)
 
@@ -83,7 +81,7 @@ if __name__ == '__main__':
     boxes_xyxy[:, 2] = boxes[:, 0] + boxes[:, 2]/2.
     boxes_xyxy[:, 3] = boxes[:, 1] + boxes[:, 3]/2.
     boxes_xyxy /= ratio
-    dets = multiclass_nms(boxes_xyxy, scores, nms_thr=0.3, score_thr=0.1)
+    dets = multiclass_nms(boxes_xyxy, scores, nms_thr=0.45, score_thr=0.1)
     if dets is not None:
         final_boxes, final_scores, final_cls_inds = dets[:, :4], dets[:, 4], dets[:, 5]
         origin_img = vis(origin_img, final_boxes, final_scores, final_cls_inds,
