@@ -23,6 +23,15 @@ If you train your custom dataset, you may need to modify the value of `num_class
 const int num_class = 80;
 ```
 
+~ error
+```
+ fatal error: cuda_runtime_api.h: No such file or directory
+   10 | #include "cuda_runtime_api.h"
+```
+에러가 뜬다 ?? 그럼 cmakelists에 cuda경로가 올바르지 않아서이다. 
+
+cuda, cudnn , TensorRT 경로를 local에 맞게 설정해라
+
 Install opencv with ```sudo apt-get install libopencv-dev``` (we don't need a higher version of opencv like v3.3+). 
 
 build the demo:

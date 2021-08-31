@@ -5,6 +5,7 @@
 import argparse
 import os
 
+
 import cv2
 import numpy as np
 
@@ -73,7 +74,11 @@ if __name__ == '__main__':
     predictions = demo_postprocess(output[0], input_shape, p6=args.with_p6)[0]
 
     boxes = predictions[:, :4]
-    scores = predictions[:, 4:5] * predictions[:, 5:]
+    scores = predictions[:, 4:5] * predictions[:, 5:7]
+    rad_sin =predictions[:, 7:8]
+    rad_cos =predictions[:, 8:9]
+    rad = np.arctan2(rad_sin,rad_cos)
+    landmarks = predictions[:, 9:9+2*3]
     
     boxes_xyxy = np.ones_like(boxes)
     boxes_xyxy[:, 0] = boxes[:, 0] - boxes[:, 2]/2.
@@ -81,12 +86,13 @@ if __name__ == '__main__':
     boxes_xyxy[:, 2] = boxes[:, 0] + boxes[:, 2]/2.
     boxes_xyxy[:, 3] = boxes[:, 1] + boxes[:, 3]/2.
     boxes_xyxy /= ratio
-    dets = multiclass_nms(boxes_xyxy, scores, nms_thr=0.45, score_thr=0.1)
+    dets = multiclass_nms(boxes_xyxy,rad,landmarks, scores, nms_thr=0.45, score_thr=0.1)
     if dets is not None:
-        final_boxes, final_scores, final_cls_inds = dets[:, :4], dets[:, 4], dets[:, 5]
-        origin_img = vis(origin_img, final_boxes, final_scores, final_cls_inds,
+        final_boxes, final_scores, final_cls_inds,final_rad,final_landmarks = dets[:, :4], dets[:, 4], dets[:, 5],dets[:, 6],dets[:, 7:]
+        origin_img = vis(origin_img, final_boxes,final_rad, final_scores, final_cls_inds,final_landmarks,
                          conf=args.score_thr, class_names=COCO_CLASSES)
 
     mkdir(args.output_dir)
     output_path = os.path.join(args.output_dir, args.image_path.split("/")[-1])
     cv2.imwrite(output_path, origin_img)
+    print("save image ",output_path)

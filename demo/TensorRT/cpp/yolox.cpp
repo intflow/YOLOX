@@ -9,7 +9,11 @@
 #include "NvInfer.h"
 #include "cuda_runtime_api.h"
 #include "logging.h"
+#include <cmath>
+#include <math.h>
 
+
+#define PI 3.14159265
 #define CHECK(status) \
     do\
     {\
@@ -30,10 +34,14 @@ using namespace nvinfer1;
 // stuff we know about the network and the input/output blobs
 static const int INPUT_W = 640;
 static const int INPUT_H = 640;
-static const int NUM_CLASSES = 80;
-const char* INPUT_BLOB_NAME = "input_0";
-const char* OUTPUT_BLOB_NAME = "output_0";
+static const int NUM_CLASSES = 2;
+const char* INPUT_BLOB_NAME = "images";
+const char* OUTPUT_BLOB_NAME = "output";
 static Logger gLogger;
+double rad2deg(double radian)
+{
+    return radian*180/PI;
+}
 
 cv::Mat static_resize(cv::Mat& img) {
     float r = std::min(INPUT_W / (img.cols*1.0), INPUT_H / (img.rows*1.0));
@@ -47,9 +55,17 @@ cv::Mat static_resize(cv::Mat& img) {
     return out;
 }
 
+
 struct Object
 {
     cv::Rect_<float> rect;
+    float rad;
+    float landmarks_x1;
+    float landmarks_y1;
+    float landmarks_x2;
+    float landmarks_y2;
+    float landmarks_x3;
+    float landmarks_y3;
     int label;
     float prob;
 };
@@ -166,14 +182,14 @@ static void generate_yolox_proposals(std::vector<GridAndStride> grid_strides, fl
 {
 
     const int num_anchors = grid_strides.size();
-
+    std::cout<<"num_anchors"<<num_anchors<<std::endl;
     for (int anchor_idx = 0; anchor_idx < num_anchors; anchor_idx++)
     {
         const int grid0 = grid_strides[anchor_idx].grid0;
         const int grid1 = grid_strides[anchor_idx].grid1;
         const int stride = grid_strides[anchor_idx].stride;
 
-        const int basic_pos = anchor_idx * (NUM_CLASSES + 5);
+        const int basic_pos = anchor_idx * (NUM_CLASSES + 4+1+2+6);
 
         // yolox/models/yolo_head.py decode logic
         float x_center = (feat_blob[basic_pos+0] + grid0) * stride;
@@ -182,6 +198,17 @@ static void generate_yolox_proposals(std::vector<GridAndStride> grid_strides, fl
         float h = exp(feat_blob[basic_pos+3]) * stride;
         float x0 = x_center - w * 0.5f;
         float y0 = y_center - h * 0.5f;
+        float rad_sin=feat_blob[basic_pos+7];
+        float rad_cos=feat_blob[basic_pos+8];
+        float rad=atan2(rad_sin,rad_cos);
+        float landmark_x1=feat_blob[basic_pos+9];
+        float landmark_y1=feat_blob[basic_pos+10];
+        float landmark_x2=feat_blob[basic_pos+11];
+        float landmark_y2=feat_blob[basic_pos+12];
+        float landmark_x3=feat_blob[basic_pos+13];
+        float landmark_y3=feat_blob[basic_pos+14];
+
+        // std::cout<<landmark_x1<<","<<landmark_y1<<","<<landmark_x2<<","<<landmark_y2<<","<<landmark_x3<<","<<landmark_y3<<std::endl;
 
         float box_objectness = feat_blob[basic_pos+4];
         for (int class_idx = 0; class_idx < NUM_CLASSES; class_idx++)
@@ -197,7 +224,13 @@ static void generate_yolox_proposals(std::vector<GridAndStride> grid_strides, fl
                 obj.rect.height = h;
                 obj.label = class_idx;
                 obj.prob = box_prob;
-
+                obj.landmarks_x1=landmark_x1;
+                obj.landmarks_y1=landmark_y1;
+                obj.landmarks_x2=landmark_x2;
+                obj.landmarks_y2=landmark_y2;
+                obj.landmarks_x3=landmark_x3;
+                obj.landmarks_y3=landmark_y3;
+                obj.rad=rad;
                 objects.push_back(obj);
             }
 
@@ -243,17 +276,23 @@ static void decode_outputs(float* prob, std::vector<Object>& objects, float scal
         int count = picked.size();
 
         std::cout << "num of boxes: " << count << std::endl;
-
+        
         objects.resize(count);
         for (int i = 0; i < count; i++)
-        {
+        {   
             objects[i] = proposals[picked[i]];
-
             // adjust offset to original unpadded
             float x0 = (objects[i].rect.x) / scale;
             float y0 = (objects[i].rect.y) / scale;
             float x1 = (objects[i].rect.x + objects[i].rect.width) / scale;
             float y1 = (objects[i].rect.y + objects[i].rect.height) / scale;
+
+            float landmark_x1=objects[i].landmarks_x1 /scale;
+            float landmark_y1=objects[i].landmarks_y1 /scale;
+            float landmark_x2=objects[i].landmarks_x2 /scale;
+            float landmark_y2=objects[i].landmarks_y2 /scale;
+            float landmark_x3=objects[i].landmarks_x3 /scale;
+            float landmark_y3=objects[i].landmarks_y3 /scale;
 
             // clip
             x0 = std::max(std::min(x0, (float)(img_w - 1)), 0.f);
@@ -261,10 +300,24 @@ static void decode_outputs(float* prob, std::vector<Object>& objects, float scal
             x1 = std::max(std::min(x1, (float)(img_w - 1)), 0.f);
             y1 = std::max(std::min(y1, (float)(img_h - 1)), 0.f);
 
+            landmark_x1 = std::max(std::min(landmark_x1, (float)(img_w - 1)), 0.f);
+            landmark_y1 = std::max(std::min(landmark_y1, (float)(img_w - 1)), 0.f);
+            landmark_x2 = std::max(std::min(landmark_x2, (float)(img_w - 1)), 0.f);
+            landmark_y2 = std::max(std::min(landmark_y2, (float)(img_w - 1)), 0.f);
+            landmark_x3 = std::max(std::min(landmark_x3, (float)(img_w - 1)), 0.f);
+            landmark_y3 = std::max(std::min(landmark_y3, (float)(img_w - 1)), 0.f);         
+
             objects[i].rect.x = x0;
             objects[i].rect.y = y0;
             objects[i].rect.width = x1 - x0;
             objects[i].rect.height = y1 - y0;
+
+            objects[i].landmarks_x1=landmark_x1;
+            objects[i].landmarks_y1=landmark_y1;
+            objects[i].landmarks_x2=landmark_x2;
+            objects[i].landmarks_y2=landmark_y2;
+            objects[i].landmarks_x3=landmark_x3;
+            objects[i].landmarks_y3=landmark_y3;
         }
 }
 
@@ -355,25 +408,16 @@ const float color_list[80][3] =
 static void draw_objects(const cv::Mat& bgr, const std::vector<Object>& objects, std::string f)
 {
     static const char* class_names[] = {
-        "person", "bicycle", "car", "motorcycle", "airplane", "bus", "train", "truck", "boat", "traffic light",
-        "fire hydrant", "stop sign", "parking meter", "bench", "bird", "cat", "dog", "horse", "sheep", "cow",
-        "elephant", "bear", "zebra", "giraffe", "backpack", "umbrella", "handbag", "tie", "suitcase", "frisbee",
-        "skis", "snowboard", "sports ball", "kite", "baseball bat", "baseball glove", "skateboard", "surfboard",
-        "tennis racket", "bottle", "wine glass", "cup", "fork", "knife", "spoon", "bowl", "banana", "apple",
-        "sandwich", "orange", "broccoli", "carrot", "hot dog", "pizza", "donut", "cake", "chair", "couch",
-        "potted plant", "bed", "dining table", "toilet", "tv", "laptop", "mouse", "remote", "keyboard", "cell phone",
-        "microwave", "oven", "toaster", "sink", "refrigerator", "book", "clock", "vase", "scissors", "teddy bear",
-        "hair drier", "toothbrush"
+        "cow", "pig"
     };
 
     cv::Mat image = bgr.clone();
-
     for (size_t i = 0; i < objects.size(); i++)
     {
         const Object& obj = objects[i];
 
-        fprintf(stderr, "%d = %.5f at %.2f %.2f %.2f x %.2f\n", obj.label, obj.prob,
-                obj.rect.x, obj.rect.y, obj.rect.width, obj.rect.height);
+        fprintf(stderr, "%d = %.5f at (%.2f %.2f %.2f ,%.2f,%.2f) at(%.2f %.2f %.2f ,%.2f,%.2f,,%.2f) \n", obj.label, obj.prob,
+                obj.rect.x, obj.rect.y, obj.rect.width, obj.rect.height,rad2deg(obj.rad),obj.landmarks_x1,obj.landmarks_y1,obj.landmarks_x2,obj.landmarks_y2,obj.landmarks_x3,obj.landmarks_y3);
 
         cv::Scalar color = cv::Scalar(color_list[obj.label][0], color_list[obj.label][1], color_list[obj.label][2]);
         float c_mean = cv::mean(color)[0];
@@ -384,7 +428,7 @@ static void draw_objects(const cv::Mat& bgr, const std::vector<Object>& objects,
             txt_color = cv::Scalar(255, 255, 255);
         }
 
-        cv::rectangle(image, obj.rect, color * 255, 2);
+        // cv::rectangle(image, obj.rect, color * 255, 2);
 
         char text[256];
         sprintf(text, "%s %.1f%%", class_names[obj.label], obj.prob * 100);
@@ -402,9 +446,13 @@ static void draw_objects(const cv::Mat& bgr, const std::vector<Object>& objects,
         //if (x + label_size.width > image.cols)
             //x = image.cols - label_size.width;
 
-        cv::rectangle(image, cv::Rect(cv::Point(x, y), cv::Size(label_size.width, label_size.height + baseLine)),
-                      txt_bk_color, -1);
+        // cv::rectangle(image, cv::Rect(cv::Point(x, y), cv::Size(label_size.width, label_size.height + baseLine)),
+        //               txt_bk_color, -1);
 
+       cv::ellipse(image,cv::Point(obj.rect.x+(obj.rect.width/2), obj.rect.y+(obj.rect.height/2)),cv::Size(obj.rect.width/2,obj.rect.height/2),rad2deg(obj.rad),0,360,cv::Scalar(255, 0, 0),2,8);
+        cv::circle(image, cv::Point(obj.landmarks_x1,obj.landmarks_y1), 4, cv::Scalar(255, 0, 0), 2, 8, 1);
+        cv::circle(image, cv::Point(obj.landmarks_x2,obj.landmarks_y2), 4, cv::Scalar(255, 255, 0), 2, 8, 1);
+        cv::circle(image, cv::Point(obj.landmarks_x3,obj.landmarks_y3), 4, cv::Scalar(255, 255, 255), 2, 8, 1);
         cv::putText(image, text, cv::Point(x, y + label_size.height),
                     cv::FONT_HERSHEY_SIMPLEX, 0.4, txt_color, 1);
     }

@@ -45,7 +45,7 @@ def nms(boxes, scores, nms_thr):
     return keep
 
 
-def multiclass_nms(boxes, scores, nms_thr, score_thr):
+def multiclass_nms(boxes,rad,landmarks, scores, nms_thr, score_thr):
     """Multiclass NMS implemented in Numpy"""
     final_dets = []
     num_classes = scores.shape[1]
@@ -57,11 +57,13 @@ def multiclass_nms(boxes, scores, nms_thr, score_thr):
         else:
             valid_scores = cls_scores[valid_score_mask]
             valid_boxes = boxes[valid_score_mask]
+            valid_rad = rad[valid_score_mask]
+            valid_landmarks = landmarks[valid_score_mask]
             keep = nms(valid_boxes, valid_scores, nms_thr)
             if len(keep) > 0:
                 cls_inds = np.ones((len(keep), 1)) * cls_ind
                 dets = np.concatenate(
-                    [valid_boxes[keep], valid_scores[keep, None], cls_inds], 1
+                    [valid_boxes[keep], valid_scores[keep, None], cls_inds,valid_rad[keep],valid_landmarks[keep]], 1
                 )
                 final_dets.append(dets)
     if len(final_dets) == 0:
