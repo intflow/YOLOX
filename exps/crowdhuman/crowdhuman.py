@@ -19,10 +19,10 @@ class Exp(MyExp):
         self.data_num_workers = 8
         self.input_size = (640, 640)
         self.random_size = (14, 26)
-        self.train_path = '/data/CrowdHuman/CrowdHuman_val'
+        self.train_path = '/data/CrowdHuman/CrowdHuman_train'
         self.val_path = '/data/CrowdHuman/CrowdHuman_val'
         self.train_ann = "label_odtk_025pi_center.json"
-        self.val_ann = "label_odtk_025pi_center.json"
+        self.val_ann = "label_coco_bbox.json"
 
         # --------------- transform config ----------------- #
         self.degrees = 10.0
@@ -35,7 +35,7 @@ class Exp(MyExp):
 
         # --------------  training config --------------------- #
         self.warmup_epochs = 5
-        self.max_epoch = 3
+        self.max_epoch = 100
         self.warmup_lr = 0
         self.basic_lr_per_img = 0.01 / 64.0
         self.scheduler = "yoloxwarmcos"
@@ -46,7 +46,7 @@ class Exp(MyExp):
         self.weight_decay = 5e-4
         self.momentum = 0.9
         self.print_interval = 100
-        self.eval_interval = 2
+        self.eval_interval = 5
         self.exp_name = os.path.split(os.path.realpath(__file__))[1].split(".")[0]
 
         # -----------------  testing config ------------------ #

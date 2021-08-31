@@ -13,13 +13,13 @@ sys.path.append(p_folder)
 sys.path.append(pp_folder)
 import yolox.utils.boxes as B
 
-root = '/data/CrowdHuman/debug'
+root = '/data/CrowdHuman/CrowdHuman_train'
 #root = '/data/EdgeFarm_cow/intflow_total_1K'
 img_folder_path = os.path.join(root, 'img')
 train_label_path = os.path.join(root, 'label')
-train_label_merge_out = os.path.join(root, 'label_odtk_025pi_center.json')
+train_label_merge_out = os.path.join(root, 'label_odtk_025pi_center2.json')
 
-mode = 1   #  0:train_data,   1:validation_data
+mode = 0   #  0:train_data,   1:validation_data
 
 json_list = []
 for (Par, Subs, Files) in os.walk(train_label_path):

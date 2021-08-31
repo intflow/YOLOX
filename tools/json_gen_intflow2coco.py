@@ -15,11 +15,11 @@ import yolox.utils.boxes as B
 
 root = '/data/CrowdHuman/CrowdHuman_train'
 #root = '/data/EdgeFarm_cow/intflow_total_1K'
-img_folder_path = os.path.join(root, 'images_train')
-train_label_path = os.path.join(root, 'label_train')
+img_folder_path = os.path.join(root, 'img')
+train_label_path = os.path.join(root, 'label')
 train_label_merge_out = os.path.join(root, 'label_coco_bbox.json')
 
-mode = 0   #  0:train_data,   1:validation_data
+mode = 1   #  0:train_data,   1:validation_data
 
 json_list = []
 for (Par, Subs, Files) in os.walk(train_label_path):
@@ -40,7 +40,7 @@ def _nz(x):
     return x
 
 def annot_overlay_rbbox(img, dets):
-        category_dic={0:'Cow',1:'Pig',2:'Person'} #class name
+        category_dic={0:'full',1:'head'} #class name
         pose_dic={0:'Standing',1:'Sitting'} #pose name
         category_color={0:(255,0,0),1:(0,255,0)} #class color
         pose_color={0:(255,255,255),1:(0,255,255)} #pose color
@@ -247,15 +247,11 @@ for num1, each_file in enumerate(tqdm.tqdm(json_list)):
 categories = [
     {
         "id": 0,
-        "name": "cow"
+        "name":"full"
     },
     {
         "id": 1,
-        "name": "pig"
-    },
-    {
-        "id": 2,
-        "name": "person"
+        "name":"head"
     }
 ]
 

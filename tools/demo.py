@@ -9,7 +9,7 @@ import cv2
 import torch
 
 from yolox.data.data_augment import preproc
-from yolox.data.datasets import COCO_CLASSES, INTFLOW_CLASSES
+from yolox.data.datasets import COCO_CLASSES, CROWDHUMAN_CLASSES
 from yolox.exp import get_exp
 from yolox.utils import fuse_model, get_model_info, postprocess, vis
 
@@ -25,11 +25,11 @@ def make_parser():
     parser.add_argument(
         "--demo", default="image", help="demo type, eg. image, video and webcam"
     )
-    parser.add_argument("-expn", "--experiment-name", type=str, default="yolox_e2e_s-intflow_total_1K")
-    parser.add_argument("-n", "--name", type=str, default="yolox_e2e_s-intflow_total_1K", help="model name")
+    parser.add_argument("-expn", "--experiment-name", type=str, default="crowdhuman")
+    parser.add_argument("-n", "--name", type=str, default="crowdhuman", help="model name")
 
     parser.add_argument(
-        "--path", default="./assets/cow.jpg", help="path to images or video"
+        "--path", default="./assets/human.jpg", help="path to images or video"
     )
     parser.add_argument("--camid", type=int, default=0, help="webcam demo camera id")
     parser.add_argument(
@@ -43,11 +43,11 @@ def make_parser():
     parser.add_argument(
         "-f",
         "--exp_file",
-        default="exps/intflow_total_1K/yolox_intflow_s.py",
+        default="exps/crowdhuman/crowdhuman.py",
         type=str,
         help="pls input your expriment description file",
     )
-    parser.add_argument("-c", "--ckpt", default="YOLOX_outputs/yolox_e2e_s-intflow_total_1K/best_ckpt.pth", type=str, help="ckpt for eval")
+    parser.add_argument("-c", "--ckpt", default="YOLOX_outputs/crowdhuman/best_ckpt.pth", type=str, help="ckpt for eval")
     parser.add_argument(
         "--device",
         default="gpu",
@@ -283,7 +283,7 @@ def main(exp, args):
         trt_file = None
         decoder = None
     
-    classes_list = INTFLOW_CLASSES
+    classes_list = CROWDHUMAN_CLASSES
     predictor = Predictor(model, exp, classes_list, trt_file, decoder, args.device)
     current_time = time.localtime()
     if args.demo == "image":
