@@ -6,7 +6,7 @@ from loguru import logger
 
 import cv2
 
-import torch
+import torch 
 
 from yolox.data.data_augment import preproc
 from yolox.data.datasets import COCO_CLASSES, CROWDHUMAN_CLASSES
