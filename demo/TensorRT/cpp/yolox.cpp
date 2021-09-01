@@ -188,7 +188,6 @@ static void generate_yolox_proposals(std::vector<GridAndStride> grid_strides, fl
         const int grid0 = grid_strides[anchor_idx].grid0;
         const int grid1 = grid_strides[anchor_idx].grid1;
         const int stride = grid_strides[anchor_idx].stride;
-
         const int basic_pos = anchor_idx * (NUM_CLASSES + 4+1+2+6);
 
         // yolox/models/yolo_head.py decode logic
@@ -201,12 +200,12 @@ static void generate_yolox_proposals(std::vector<GridAndStride> grid_strides, fl
         float rad_sin=feat_blob[basic_pos+7];
         float rad_cos=feat_blob[basic_pos+8];
         float rad=atan2(rad_sin,rad_cos);
-        float landmark_x1=feat_blob[basic_pos+9];
-        float landmark_y1=feat_blob[basic_pos+10];
-        float landmark_x2=feat_blob[basic_pos+11];
-        float landmark_y2=feat_blob[basic_pos+12];
-        float landmark_x3=feat_blob[basic_pos+13];
-        float landmark_y3=feat_blob[basic_pos+14];
+        float landmark_x1=(feat_blob[basic_pos+9] + grid0) * stride;
+        float landmark_y1=(feat_blob[basic_pos+10] + grid1) * stride;
+        float landmark_x2=(feat_blob[basic_pos+11] + grid0) * stride;
+        float landmark_y2=(feat_blob[basic_pos+12] + grid1) * stride;
+        float landmark_x3=(feat_blob[basic_pos+13] + grid0) * stride;
+        float landmark_y3=(feat_blob[basic_pos+14] + grid1) * stride;
 
         // std::cout<<landmark_x1<<","<<landmark_y1<<","<<landmark_x2<<","<<landmark_y2<<","<<landmark_x3<<","<<landmark_y3<<std::endl;
 
@@ -266,6 +265,8 @@ static void decode_outputs(float* prob, std::vector<Object>& objects, float scal
         generate_grids_and_stride(INPUT_W, strides, grid_strides);
         generate_yolox_proposals(grid_strides, prob,  BBOX_CONF_THRESH, proposals);
         std::cout << "num of boxes before nms: " << proposals.size() << std::endl;
+
+        
 
         qsort_descent_inplace(proposals);
 
@@ -450,9 +451,14 @@ static void draw_objects(const cv::Mat& bgr, const std::vector<Object>& objects,
         //               txt_bk_color, -1);
 
        cv::ellipse(image,cv::Point(obj.rect.x+(obj.rect.width/2), obj.rect.y+(obj.rect.height/2)),cv::Size(obj.rect.width/2,obj.rect.height/2),rad2deg(obj.rad),0,360,cv::Scalar(255, 0, 0),2,8);
-        cv::circle(image, cv::Point(obj.landmarks_x1,obj.landmarks_y1), 4, cv::Scalar(255, 0, 0), 2, 8, 1);
-        cv::circle(image, cv::Point(obj.landmarks_x2,obj.landmarks_y2), 4, cv::Scalar(255, 255, 0), 2, 8, 1);
-        cv::circle(image, cv::Point(obj.landmarks_x3,obj.landmarks_y3), 4, cv::Scalar(255, 255, 255), 2, 8, 1);
+        
+        cv::ellipse(image,cv::Point(obj.landmarks_x1,obj.landmarks_y1),cv::Size(2,2),0,0,360,cv::Scalar(0, 0, 255),2,8);
+        cv::ellipse(image,cv::Point(obj.landmarks_x2,obj.landmarks_y2),cv::Size(2,2),0,0,360,cv::Scalar(0, 255, 0),2,8);
+        cv::ellipse(image,cv::Point(obj.landmarks_x3,obj.landmarks_y3),cv::Size(2,2),0,0,360,cv::Scalar(0, 255, 255),2,8);
+
+
+        std::cout<<obj.landmarks_x1<<","<<obj.landmarks_y1<<","<<obj.landmarks_x2<<","<<obj.landmarks_y2<<","<<obj.landmarks_x3<<","<<obj.landmarks_y3<<std::endl;
+
         cv::putText(image, text, cv::Point(x, y + label_size.height),
                     cv::FONT_HERSHEY_SIMPLEX, 0.4, txt_color, 1);
     }
