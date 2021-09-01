@@ -30,9 +30,9 @@ def make_parser():
         type=str,
         help="url used to set up distributed training",
     )
-    parser.add_argument("-b", "--batch-size", type=int, default=8, help="batch size")
+    parser.add_argument("-b", "--batch-size", type=int, default=32, help="batch size")
     parser.add_argument(
-        "-d", "--devices", default=1, type=int, help="device for training"
+        "-d", "--devices", default=4, type=int, help="device for training"
     )
     parser.add_argument(
         "-f",
@@ -49,7 +49,7 @@ def make_parser():
     )
     #parser.add_argument("-c", "--ckpt", default='/data/pretrained/yolox_s.pth', type=str, help="checkpoint file")
     #parser.add_argument("-c", "--ckpt", default='YOLOX_outputs/yolox_oad_e2e_s-intflow_total_1K/latest_ckpt.pth', type=str, help="checkpoint file")
-    #parser.add_argument("-c", "--ckpt", default='YOLOX_outputs/yolox_e2e_s-intflow_total_1K(2)/best_ckpt.pth', type=str, help="checkpoint file")
+    #parser.add_argument("-c", "--ckpt", default='/data/pretrained/hcow/yolox_s_oad_lm3__intflow_total_100K_2_test1.pth', type=str, help="checkpoint file")
     parser.add_argument("-c", "--ckpt", default='YOLOX_outputs/yolox_s_oad_lm3__intflow_total_1K/p0_ckpt.pth', type=str, help="checkpoint file")
     parser.add_argument(
         "-e",

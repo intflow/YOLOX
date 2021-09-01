@@ -74,8 +74,8 @@ class Pruner:
         # model related init
         torch.cuda.set_device(self.local_rank)
         
-        self.model = self.exp.get_model()
-        model = self.model
+        model = self.exp.get_model()
+        model = self.resume_train(model)
 
         # solver related init
         self.optimizer = self.exp.get_optimizer(self.args.batch_size)
@@ -83,9 +83,9 @@ class Pruner:
         logger.info(
             "Model Summary: {}".format(get_model_info(model, self.exp.test_size))
         )
-        self.prune_model(model)
 
-        logger.info("Training start...")
+        logger.info("Pruning start...")
+        self.prune_model(model)
         logger.info("\n{}".format(model))
 
     def save_ckpt(self, ckpt_name, update_best_ckpt=False):
@@ -137,3 +137,40 @@ class Pruner:
         torch.save(model, 'YOLOX_outputs/'+self.args.experiment_name + '/'+ self.args.prune_level+'_ckpt.pth')
         #self.save_ckpt(self.args.prune_level)
 
+    @property
+    def progress_in_iter(self):
+        return self.epoch * self.max_iter + self.iter
+
+    def resume_train(self, model):
+        if self.args.resume:
+            logger.info("resume training")
+            if self.args.ckpt is None:
+                ckpt_file = os.path.join(self.file_name, "latest" + "_ckpt.pth")
+            else:
+                ckpt_file = self.args.ckpt
+
+            ckpt = torch.load(ckpt_file, map_location=self.device)
+            # resume the model/optimizer state dict
+            model.load_state_dict(ckpt["model"])
+            self.optimizer.load_state_dict(ckpt["optimizer"])
+            # resume the training states variables
+            start_epoch = (
+                self.args.start_epoch - 1
+                if self.args.start_epoch is not None
+                else ckpt["start_epoch"]
+            )
+            self.start_epoch = start_epoch
+            logger.info(
+                "loaded checkpoint '{}' (epoch {})".format(
+                    self.args.resume, self.start_epoch
+                )
+            )  # noqa
+        else:
+            if self.args.ckpt is not None:
+                logger.info("loading checkpoint for fine tuning")
+                ckpt_file = self.args.ckpt
+                ckpt = torch.load(ckpt_file, map_location=self.device)["model"]
+                model = load_ckpt(model, ckpt)
+            self.start_epoch = 0
+
+        return model
