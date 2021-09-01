@@ -1,15 +1,14 @@
 [property]
 gpu-id=0
-#net-scale-factor=0.0039215697906911373
 net-scale-factor=1
+
 # 0:RGB 1:BGR
 model-color-format=0
-
-model-engine-file=/yolox_s_oad_lm3__intflow_total_2_test1.engine
-#model-engine-file=/works/YOLOX/yolox_intflow_s-intflow_total_100K.engine
+#model-engine-file=/yolox_s_oad_lm3__intflow_total_2_test1.engine
+model-engine-file=/works/YOLOX/YOLOX-deepstream/yolox_s.engine
 
 labelfile-path=labels.txt
-num-detected-classes=2
+num-detected-classes=80
 
 interval=0
 gie-unique-id=1

@@ -16,7 +16,7 @@ enable=1
 
 # 1:camera(v4l2) 2: single uri 3:multi uri 4:rtsp 5 camera(CSI) only for Jetson
 type=2
-uri=rtsp://admin:intflow3121@moonfarm.iptime.org:20155/Streaming/Channels/101
+uri=file:///opt/nvidia/deepstream/deepstream-5.1/samples/streams/sample_1080p_h264.mp4
 num-sources=1
 gpu-id=0
 cudadec-memtype=0

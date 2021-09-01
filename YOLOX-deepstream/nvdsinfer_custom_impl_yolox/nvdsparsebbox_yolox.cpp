@@ -27,7 +27,7 @@
 
 
 #define DEVICE 0  // GPU id
-#define NMS_THRESH 0.45
+#define NMS_THRESH 0.65
 #define BBOX_CONF_THRESH 0.3
 
 
@@ -222,6 +222,7 @@ static void decode_outputs(float* prob, std::vector<Object>& objects, float scal
         for (int i = 0; i < count; i++)
         {
             objects[i] = proposals[picked[i]];
+
             // adjust offset to original unpadded
             // float x0 = (objects[i].rect.x) / scale;
             // float y0 = (objects[i].rect.y) / scale;
