@@ -45,12 +45,12 @@ def make_parser():
         "--resume", default=False, action="store_true", help="resume training"
     )
     parser.add_argument(
-        "--pruning", default=True, action="store_true", help="train from pruned model"
+        "--pruning", default=False, action="store_true", help="train from pruned model"
     )
     #parser.add_argument("-c", "--ckpt", default='/data/pretrained/yolox_s.pth', type=str, help="checkpoint file")
     #parser.add_argument("-c", "--ckpt", default='YOLOX_outputs/yolox_oad_e2e_s-intflow_total_1K/latest_ckpt.pth', type=str, help="checkpoint file")
-    #parser.add_argument("-c", "--ckpt", default='/data/pretrained/hcow/yolox_s_oad_lm3__intflow_total_100K_2_test1.pth', type=str, help="checkpoint file")
-    parser.add_argument("-c", "--ckpt", default='YOLOX_outputs/yolox_s_oad_lm3__intflow_total_1K/p0_ckpt.pth', type=str, help="checkpoint file")
+    parser.add_argument("-c", "--ckpt", default='/data/pretrained/hcow/yolox_s_oad_lm3__intflow_total_100K_2_test1.pth', type=str, help="checkpoint file")
+    #parser.add_argument("-c", "--ckpt", default='YOLOX_outputs/yolox_s_oad_lm3__intflow_total_1K/p0_ckpt.pth', type=str, help="checkpoint file")
     parser.add_argument(
         "-e",
         "--start_epoch",
@@ -67,7 +67,7 @@ def make_parser():
     parser.add_argument(
         "--fp16",
         dest="fp16",
-        default=False,
+        default=True,
         action="store_true",
         help="Adopting mix precision training.",
     )

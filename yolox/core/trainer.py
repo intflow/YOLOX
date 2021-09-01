@@ -138,7 +138,6 @@ class Trainer:
                 "Model Summary: {}".format(get_model_info(model, self.exp.test_size))
             )
         model.to(self.device)
-        self.model = model
 
         # solver related init
         self.optimizer = self.exp.get_optimizer(self.args.batch_size)
