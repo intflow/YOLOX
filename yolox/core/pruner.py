@@ -127,7 +127,7 @@ class Pruner:
 
         for m in model.modules():
             if isinstance(m, nn.Conv2d) and m not in excluded_layers:
-                pruning_plan = DG.get_pruning_plan( m, tp.prune_conv, idxs=strategy(m.weight, amount=0.4) )
+                pruning_plan = DG.get_pruning_plan( m, tp.prune_conv, idxs=strategy(m.weight, amount=self.args.prune_amount) )
                 print(pruning_plan)
                 # execute the plan (prune the model)
                 pruning_plan.exec()
