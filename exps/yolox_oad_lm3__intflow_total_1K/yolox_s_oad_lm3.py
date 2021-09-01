@@ -27,19 +27,19 @@ class Exp(MyExp):
         # --------------- transform config ----------------- #
         self.degrees = 0.0
         self.translate = 0.1
-        self.scale = (0.1, 2)
+        self.scale = (0.5, 2)
         self.mscale = (0.8, 1.6)
         self.shear = 2.0
         self.perspective = 0.0
-        self.enable_mixup = False
+        self.enable_mixup = True
 
         # --------------  training config --------------------- #
-        self.warmup_epochs = 5
+        self.warmup_epochs = 1
         self.max_epoch = 300
         self.warmup_lr = 0
         self.basic_lr_per_img = 0.01 / 64.0
         self.scheduler = "yoloxwarmcos"
-        self.no_aug_epochs = 50
+        self.no_aug_epochs = 15
         self.min_lr_ratio = 0.05
         self.ema = True
 
@@ -105,7 +105,7 @@ class Exp(MyExp):
 
         return train_loader
 
-    def get_eval_loader(self, batch_size, is_distributed, testdev=False, legacy=False):
+    def get_eval_loader(self, batch_size, is_distributed, testdev=False):
         from yolox.data import INTFLOWDataset, ValTransform
 
         valdataset = INTFLOWDataset(
@@ -113,7 +113,7 @@ class Exp(MyExp):
             json_file=self.val_ann,
             name="img_mask",
             img_size=self.input_size,
-            preproc=ValTransform(legacy=legacy),
+            preproc=ValTransform(),
             compatible_coco=True,
             rotation=False,
         )
@@ -136,10 +136,10 @@ class Exp(MyExp):
 
         return val_loader
 
-    def get_evaluator(self, batch_size, is_distributed, testdev=False, legacy=False):
+    def get_evaluator(self, batch_size, is_distributed, testdev=False):
         from yolox.evaluators import INTFLOWEvaluator
 
-        val_loader = self.get_eval_loader(batch_size, is_distributed, testdev, legacy)
+        val_loader = self.get_eval_loader(batch_size, is_distributed, testdev=testdev)
         evaluator = INTFLOWEvaluator(
             dataloader=val_loader,
             img_size=self.test_size,

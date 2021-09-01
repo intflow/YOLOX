@@ -10,7 +10,7 @@ from loguru import logger
 import torch
 import torch.backends.cudnn as cudnn
 
-from yolox.core import Trainer, launch
+from yolox.core import Pruner, launch
 from yolox.exp import get_exp
 from yolox.utils import configure_nccl, configure_omp, get_num_devices
 
@@ -37,20 +37,21 @@ def make_parser():
     parser.add_argument(
         "-f",
         "--exp_file",
-        default='exps/yolox_oad_lm3__intflow_total_1K/yolox_s_oad_lm3.py',
+        default='exps/yolox_oad_lm3__intflow_total_100K_2/yolox_s_oad_lm3.py',
         type=str,
         help="plz input your expriment description file",
     )
     parser.add_argument(
-        "--resume", default=False, action="store_true", help="resume training"
+        "-p",
+        "--prune_level",
+        default='p0',
+        type=str,
+        help="plz input your pruned file name",
     )
     parser.add_argument(
-        "--pruning", default=True, action="store_true", help="train from pruned model"
+        "--resume", default=False, action="store_true", help="resume training"
     )
-    #parser.add_argument("-c", "--ckpt", default='/data/pretrained/yolox_s.pth', type=str, help="checkpoint file")
-    #parser.add_argument("-c", "--ckpt", default='YOLOX_outputs/yolox_oad_e2e_s-intflow_total_1K/latest_ckpt.pth', type=str, help="checkpoint file")
-    #parser.add_argument("-c", "--ckpt", default='YOLOX_outputs/yolox_e2e_s-intflow_total_1K(2)/best_ckpt.pth', type=str, help="checkpoint file")
-    parser.add_argument("-c", "--ckpt", default='YOLOX_outputs/yolox_s_oad_lm3__intflow_total_1K/p0_ckpt.pth', type=str, help="checkpoint file")
+    parser.add_argument("-c", "--ckpt", default='/data/pretrained/hcow/yolox_s_oad_lm3__intflow_total_100K_2_test1.pth', type=str, help="checkpoint file")
     parser.add_argument(
         "-e",
         "--start_epoch",
@@ -70,21 +71,6 @@ def make_parser():
         default=False,
         action="store_true",
         help="Adopting mix precision training.",
-    )
-    parser.add_argument(
-        "--cache",
-        dest="cache",
-        default=True,
-        action="store_true",
-        help="Caching imgs to RAM for fast training.",
-    )
-    parser.add_argument(
-        "-o",
-        "--occupy",
-        dest="occupy",
-        default=False,
-        action="store_true",
-        help="occupy GPU memory first for training.",
     )
     parser.add_argument(
         "opts",
@@ -112,8 +98,8 @@ def main(exp, args):
     configure_omp()
     cudnn.benchmark = True
 
-    trainer = Trainer(exp, args)
-    trainer.train()
+    pruner = Pruner(exp, args)
+    pruner.pruning()
 
 
 if __name__ == "__main__":

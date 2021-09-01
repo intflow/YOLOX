@@ -82,6 +82,10 @@ class Exp(BaseExp):
         self.model.head.initialize_biases(1e-2)
         return self.model
 
+    def get_model_pruning(self, model_path):
+        self.model = torch.load(model_path)
+        return self.model
+
     def get_data_loader(
         self, batch_size, is_distributed, no_aug=False, cache_img=False
     ):

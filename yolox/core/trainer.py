@@ -128,17 +128,24 @@ class Trainer:
 
         # model related init
         torch.cuda.set_device(self.local_rank)
-        model = self.exp.get_model()
-        logger.info(
-            "Model Summary: {}".format(get_model_info(model, self.exp.test_size))
-        )
+
+        if self.args.pruning == True:
+            model = self.exp.get_model_pruning(self.args.ckpt)  # no load_state_dict
+            self.start_epoch = 0
+        else:
+            model = self.exp.get_model() # Initialize model from experiment
+            logger.info(
+                "Model Summary: {}".format(get_model_info(model, self.exp.test_size))
+            )
         model.to(self.device)
+        self.model = model
 
         # solver related init
         self.optimizer = self.exp.get_optimizer(self.args.batch_size)
 
-        # value of epoch will be set in `resume_train`
-        model = self.resume_train(model)
+        if self.args.pruning == False:
+            # value of epoch will be set in `resume_train`
+            model = self.resume_train(model)
 
         # data related init
         self.no_aug = self.start_epoch >= self.max_epoch - self.exp.no_aug_epochs
