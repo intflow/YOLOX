@@ -6,8 +6,8 @@ perf-measurement-interval-sec=1
 enable=0
 rows=1
 columns=1
-width=1920
-height=1080
+width=1672
+height=940
 gpu-id=0
 nvbuf-memory-type=0
 
@@ -16,7 +16,7 @@ enable=1
 
 # 1:camera(v4l2) 2: single uri 3:multi uri 4:rtsp 5 camera(CSI) only for Jetson
 type=2
-uri=file:///opt/nvidia/deepstream/deepstream-5.1/samples/streams/sample_1080p_h264.mp4
+uri=file:///works/YOLOX/YOLOX-deepstream/test_2.mp4
 num-sources=1
 gpu-id=0
 cudadec-memtype=0
