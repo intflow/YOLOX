@@ -24,7 +24,7 @@ def make_parser():
     parser.add_argument(
         "--demo", default="image", help="demo type, eg. image, video and webcam"
     )
-    parser.add_argument("-expn", "--experiment-name", type=str, default="yolox_s_oad_lm3__intflow_total_100K_2")
+    parser.add_argument("-expn", "--experiment-name", type=str, default="yolox_s_oad_lm3__intflow_total_1K")
     parser.add_argument("-n", "--name", type=str, default="yolox_s_oad_lm3", help="model name")
 
     parser.add_argument(
@@ -46,7 +46,9 @@ def make_parser():
         type=str,
         help="pls input your expriment description file",
     )
-    parser.add_argument("-c", "--ckpt", default="/data/pretrained/hcow/yolox_s_oad_lm3__intflow_total_100K_2_test1.pth", type=str, help="ckpt for eval")
+    #parser.add_argument("-c", "--ckpt", default="/data/pretrained/hcow/yolox_s_oad_lm3__intflow_total_100K_2_test1.pth", type=str, help="ckpt for eval")
+    parser.add_argument("-m", "--model", default="YOLOX_outputs/yolox_s_oad_lm3__intflow_total_1K/p0_ckpt.pth", type=str, help="model reference for eval")
+    parser.add_argument("-c", "--ckpt", default="/data/pretrained/hcow/yolox_s_oad_lm3__intflow_total_1K_p0.pth", type=str, help="ckpt for eval")
     parser.add_argument(
         "--device",
         default="gpu",
@@ -76,6 +78,13 @@ def make_parser():
         default=False,
         action="store_true",
         help="Fuse conv and bn for testing.",
+    )
+    parser.add_argument(
+        "--pruning",
+        dest="pruning",
+        default=True,
+        action="store_true",
+        help="Set pretrained model is whether pruned or not",
     )
     parser.add_argument(
         "--trt",
@@ -261,8 +270,13 @@ def main(exp, args):
     if args.tsize is not None:
         exp.test_size = (args.tsize, args.tsize)
 
-    model = exp.get_model()
-    logger.info("Model Summary: {}".format(get_model_info(model, exp.test_size)))
+
+    if args.pruning:
+        model = exp.get_model_pruning(args.model)
+        logger.info("Model Summary: {}".format(get_model_info(model, exp.test_size)))
+    else:
+        model = exp.get_model()
+        logger.info("Model Summary: {}".format(get_model_info(model, exp.test_size)))
 
     if args.device == "gpu":
         model.cuda()
@@ -295,6 +309,7 @@ def main(exp, args):
     else:
         trt_file = None
         decoder = None
+
     classes_list = INTFLOW_CLASSES
     predictor = Predictor(model, exp, classes_list, trt_file, decoder, args.device, args.legacy)
     current_time = time.localtime()
