@@ -74,7 +74,10 @@ class Pruner:
         # model related init
         torch.cuda.set_device(self.local_rank)
         
-        model = self.exp.get_model()
+        if self.args.model == None:
+            model = self.exp.get_model()
+        else:
+            model = self.exp.get_model_pruning(self.args.model)
         model = self.resume_train(model)
 
         # solver related init
@@ -86,7 +89,7 @@ class Pruner:
 
         logger.info("Pruning start...")
         self.prune_model(model)
-        logger.info("\n{}".format(model))
+        ##logger.info("\n{}".format(model))
 
     def save_ckpt(self, ckpt_name, update_best_ckpt=False):
         if self.rank == 0:

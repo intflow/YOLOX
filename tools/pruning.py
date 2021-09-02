@@ -51,6 +51,7 @@ def make_parser():
     parser.add_argument(
         "--resume", default=False, action="store_true", help="resume training"
     )
+    parser.add_argument("-m", "--model", default=None, type=str, help="model reference for eval")
     parser.add_argument("-c", "--ckpt", default='/data/pretrained/hcow/yolox_s_oad_lm3__intflow_total_100K_2_test1.pth', type=str, help="checkpoint file")
     parser.add_argument(
         "-e",
