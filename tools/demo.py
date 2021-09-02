@@ -82,7 +82,7 @@ def make_parser():
     parser.add_argument(
         "--pruning",
         dest="pruning",
-        default=True,
+        default=False,
         action="store_true",
         help="Set pretrained model is whether pruned or not",
     )
