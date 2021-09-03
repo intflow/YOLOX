@@ -47,7 +47,7 @@ def make_parser():
         help="pls input your expriment description file",
     )
     #parser.add_argument("-c", "--ckpt", default="/data/pretrained/hcow/yolox_s_oad_lm3__intflow_total_100K_2_test1.pth", type=str, help="ckpt for eval")
-    parser.add_argument("-m", "--model", default="YOLOX_outputs/yolox_s_oad_lm3__intflow_total_1K/p0_ckpt.pth", type=str, help="model reference for eval")
+    parser.add_argument("-m", "--model", default=None, type=str, help="model reference for eval")
     parser.add_argument("-c", "--ckpt", default="/data/pretrained/hcow/yolox_s_oad_lm3__intflow_total_1K_p0.pth", type=str, help="ckpt for eval")
     parser.add_argument(
         "--device",
