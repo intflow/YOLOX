@@ -19,8 +19,8 @@ class Exp(MyExp):
         self.data_num_workers = 4
         self.input_size = (640, 640)
         self.random_size = (14, 26)
-        self.train_path = '/data/EdgeFarm_cow/tr2_cow_5K'
-        self.val_path = '/data/EdgeFarm_cow/tr2_cow_1K'
+        self.train_path = '/data/EdgeFarm_pig/tr2_pig_5K'
+        self.val_path = '/data/EdgeFarm_pig/tr2_pig_1K'
         self.train_ann = "label_odtk_025pi_center.json"
         self.val_ann = "label_coco_rbbox.json"
 
