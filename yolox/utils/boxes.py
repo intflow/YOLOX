@@ -36,7 +36,7 @@ def filter_box(output, scale_range):
     return output[keep]
 
 
-def postprocess_nms(prediction, num_classes, conf_thre=0.7, nms_thre=0.45):
+def postprocess_nms(prediction, num_classes, conf_thre=0.7, nms_thre=0.45, class_agnostic=False):
     box_corner = prediction.new(prediction.shape)
     box_corner[:, :, 0] = prediction[:, :, 0] - prediction[:, :, 2] / 2
     box_corner[:, :, 1] = prediction[:, :, 1] - prediction[:, :, 3] / 2
@@ -69,7 +69,7 @@ def postprocess_nms(prediction, num_classes, conf_thre=0.7, nms_thre=0.45):
     return output
 
 
-def postprocess(prediction, num_classes, conf_thre=0.7, nms_thre=0.45):
+def postprocess(prediction, num_classes, conf_thre=0.7, nms_thre=0.45, class_agnostic=True):
     box_corner = prediction.new(prediction.shape)
     box_corner[:, :, 0] = prediction[:, :, 0] - prediction[:, :, 2] / 2
     box_corner[:, :, 1] = prediction[:, :, 1] - prediction[:, :, 3] / 2
@@ -94,14 +94,54 @@ def postprocess(prediction, num_classes, conf_thre=0.7, nms_thre=0.45):
         detections = torch.cat((image_pred[:, :4], obj_conf, class_conf, class_pred.float(), rad, landmarks), 1)
         detections = detections[conf_mask]
         if not detections.size(0):
-            continue##
-        nms_out_index = torchvision.ops.batched_nms(
-            detections[:, :4],
-            torch.sqrt(detections[:, 4] * detections[:, 5] + 1e-14),
-            detections[:, 6],
-            nms_thre,
-        )
+            continue
+        
+        if class_agnostic:
+            nms_out_index = torchvision.ops.nms(
+                detections[:, :4],
+                torch.sqrt(detections[:, 4] * detections[:, 5] + 1e-4),
+                nms_thre,
+            )
+        else:
+            nms_out_index = torchvision.ops.batched_nms(
+                detections[:, :4],
+                torch.sqrt(detections[:, 4] * detections[:, 5] + 1e-4),
+                detections[:, 6],
+                nms_thre,
+            )
+
         detections = detections[nms_out_index]
+
+        # Normalize every bboxes have W > H, and its 0,5 pi shifted radian accordingly
+        bboxes_tmp = xyxy2cxcywh(detections[:,0:4].clone())
+        d_w=bboxes_tmp[:,2]
+        d_h=bboxes_tmp[:,3]
+
+        bbox_rotate = bboxes_tmp.clone()
+        bbox_rotate[:,2] = d_h
+        bbox_rotate[:,3] = d_w
+        bbox_reform = cxcywh2xyxy(bbox_rotate)
+
+        detections[d_w > d_h,0:4] = bbox_reform[d_w > d_h,0:4] # Switch w and h
+        detections[d_w > d_h,7] =  detections[d_w > d_h,7] + 1.570796 # Add 0.5pi
+
+        if class_agnostic:
+            nms_out_index = torchvision.ops.nms(
+                detections[:, :4],
+                torch.sqrt(detections[:, 4] * detections[:, 5] + 1e-4),
+                nms_thre,
+            )
+        else:
+            nms_out_index = torchvision.ops.batched_nms(
+                detections[:, :4],
+                torch.sqrt(detections[:, 4] * detections[:, 5] + 1e-4),
+                detections[:, 6],
+                nms_thre,
+            )
+
+        detections = detections[nms_out_index]
+
+
         if output[i] is None:
             output[i] = detections
         else:
@@ -201,6 +241,15 @@ def xyxy2cxcywh(bboxes):
     bboxes[:, 0] = bboxes[:, 0] + bboxes[:, 2] * 0.5
     bboxes[:, 1] = bboxes[:, 1] + bboxes[:, 3] * 0.5
     return bboxes
+
+def cxcywh2xyxy(bboxes):
+    bboxes_out = bboxes.clone()
+    bboxes_out[:, 0] = bboxes[:, 0] - bboxes[:, 2] / 2
+    bboxes_out[:, 1] = bboxes[:, 1] - bboxes[:, 3] / 2
+    bboxes_out[:, 2] = bboxes[:, 0] + bboxes[:, 2] / 2
+    bboxes_out[:, 3] = bboxes[:, 1] + bboxes[:, 3] / 2
+
+    return bboxes_out
 
 def rotate_box(rbbox):
     cx, cy, width, height, theta = rbbox

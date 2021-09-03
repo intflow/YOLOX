@@ -27,6 +27,7 @@ def vis(img, boxes, rads, scores, cls_ids, landmarks, conf=0.5, class_names=None
         h = int(box[3])
         x0 = int(cx - w/2)
         y0 = int(cy - h/2)
+
         [sx1, sy1, sx2, sy2, sx3, sy3, sx4, sy4] = B.rotate_box([cx,cy,w,h,rad])
         [l1_x, l1_y, l2_x, l2_y, l3_x, l3_y] = landmark
 
@@ -37,10 +38,11 @@ def vis(img, boxes, rads, scores, cls_ids, landmarks, conf=0.5, class_names=None
 
         txt_size = cv2.getTextSize(text, font, 0.4, 1)[0]
         ##cv2.rectangle(img, (x0, y0), (x1, y1), color, 2)
-        cv2.line(img,(int(sx1),int(sy1)),(int(sx2),int(sy2)),color,2)
-        cv2.line(img,(int(sx2),int(sy2)),(int(sx3),int(sy3)),color,2)
-        cv2.line(img,(int(sx3),int(sy3)),(int(sx4),int(sy4)),color,2)
-        cv2.line(img,(int(sx4),int(sy4)),(int(sx1),int(sy1)),color,2)
+        cv2.ellipse(img,((int(cx),int(cy)),(int(w),int(h)),np.rad2deg(rad)),color,3)
+        cv2.line(img,(int(sx1),int(sy1)),(int(sx2),int(sy2)),color,1)
+        cv2.line(img,(int(sx2),int(sy2)),(int(sx3),int(sy3)),color,1)
+        cv2.line(img,(int(sx3),int(sy3)),(int(sx4),int(sy4)),color,1)
+        cv2.line(img,(int(sx4),int(sy4)),(int(sx1),int(sy1)),color,1)
 
         cv2.circle(img, (int(l1_x),int(l1_y)), radius=4, color=(0, 0, 255), thickness=-1)
         cv2.circle(img, (int(l2_x),int(l2_y)), radius=4, color=(0, 255, 0), thickness=-1)

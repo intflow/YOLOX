@@ -28,7 +28,7 @@ def make_parser():
     parser.add_argument("-n", "--name", type=str, default="yolox_s_oad_lm3", help="model name")
 
     parser.add_argument(
-        "--path", default="./assets/pig.jpg", help="path to images or video"
+        "--path", default="./assets/cow2.jpg", help="path to images or video"
     )
     parser.add_argument("--camid", type=int, default=0, help="webcam demo camera id")
     parser.add_argument(
@@ -46,9 +46,9 @@ def make_parser():
         type=str,
         help="pls input your expriment description file",
     )
-    #parser.add_argument("-c", "--ckpt", default="/data/pretrained/hcow/yolox_s_oad_lm3__intflow_total_100K_2_test1.pth", type=str, help="ckpt for eval")
-    parser.add_argument("-m", "--model", default=None, type=str, help="model reference for eval")
-    parser.add_argument("-c", "--ckpt", default="/data/pretrained/hcow/yolox_s_oad_lm3__intflow_total_1K_p0.pth", type=str, help="ckpt for eval")
+    parser.add_argument("-c", "--ckpt", default="/data/pretrained/hcow/yolox_s_oad_lm3__intflow_total_100K_2_test1.pth", type=str, help="ckpt for eval")
+    #parser.add_argument("-m", "--model", default=None, type=str, help="model reference for eval")
+    #parser.add_argument("-c", "--ckpt", default="/data/pretrained/hcow/yolox_s_oad_lm3__intflow_total_1K_p0.pth", type=str, help="ckpt for eval")
     parser.add_argument(
         "--device",
         default="gpu",
@@ -56,7 +56,7 @@ def make_parser():
         help="device to run our model, can either be cpu or gpu",
     )
     parser.add_argument("--conf", default=0.6, type=float, help="test conf")
-    parser.add_argument("--nms", default=0.65, type=float, help="test nms threshold")
+    parser.add_argument("--nms", default=0.0005, type=float, help="test nms threshold")
     parser.add_argument("--tsize", default=640, type=int, help="test img size")
     parser.add_argument(
         "--fp16",
@@ -164,7 +164,7 @@ class Predictor(object):
             if self.decoder is not None:
                 outputs = self.decoder(outputs, dtype=outputs.type())
             outputs = postprocess(
-                outputs, self.num_classes, self.confthre
+                outputs, self.num_classes, self.confthre, self.nmsthre
             )
             logger.info("Infer time: {:.4f}s".format(time.time() - t0))
         return outputs, img_info
