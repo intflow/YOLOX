@@ -122,18 +122,29 @@ class Pruner:
         out = model(torch.randn([1,3, self.exp.input_size[0], self.exp.input_size[0]]))
         DG.build_dependency(model, example_inputs=torch.randn([1,3, self.exp.input_size[0], self.exp.input_size[1]]))
         # Exclude pruning on output layers
-        excluded_layers = list(model.head.cls_preds.modules()) + \
-                          list(model.head.reg_preds.modules()) + \
-                          list(model.head.rad_preds.modules()) + \
-                          list(model.head.lm_preds.modules()) + \
-                          list(model.head.obj_preds.modules())
-
+        excluded_layers = list(model.head.cls_preds) + \
+                          list(model.head.reg_preds) + \
+                          list(model.head.rad_preds) + \
+                          list(model.head.lm_preds) + \
+                          list(model.head.obj_preds)
+        
+        #Check total number of sublayers to be pruned
+        layer_num = 0
         for m in model.modules():
             if isinstance(m, nn.Conv2d) and m not in excluded_layers:
-                pruning_plan = DG.get_pruning_plan( m, tp.prune_conv, idxs=strategy(m.weight, amount=self.args.prune_amount) )
+                layer_num += 1
+        
+        #Set prune amount per each layer
+        prune_amount_list = np.arange(0.1,self.args.prune_amount,(self.args.prune_amount-0.1)/layer_num)
+
+        layer_cnt = 0
+        for m in model.modules():
+            if isinstance(m, nn.Conv2d) and m not in excluded_layers:
+                pruning_plan = DG.get_pruning_plan( m, tp.prune_conv, idxs=strategy(m.weight, amount=prune_amount_list[layer_cnt]) )
                 print(pruning_plan)
                 # execute the plan (prune the model)
                 pruning_plan.exec()
+                layer_cnt += 1
         num_params_after_pruning = tp.utils.count_params( model )
         print( "  Params: %s => %s"%( num_params_before_pruning, num_params_after_pruning))
         self.model = model

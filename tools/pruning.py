@@ -67,7 +67,7 @@ def make_parser():
         "--machine_rank", default=0, type=int, help="node rank for multi-node training"
     )
     parser.add_argument(
-        "--prune_amount", default=0.2, type=float, help="set prunig amount (default=0.2)"
+        "--prune_amount", default=0.5, type=float, help="set prunig amount (default=0.5)"
     )
     parser.add_argument(
         "--fp16",
