@@ -13,7 +13,7 @@ sys.path.append(p_folder)
 sys.path.append(pp_folder)
 import yolox.utils.boxes as B
 
-root = '/data/EdgeFarm_cow/intflow_total_1K'
+root = '/data/EdgeFarm_cow/tr2_cow_1K'
 #root = '/data/EdgeFarm_cow/intflow_total_1K'
 img_folder_path = os.path.join(root, 'img_mask')
 train_label_path = os.path.join(root, 'label')
