@@ -74,7 +74,7 @@ def make_parser():
     parser.add_argument(
         "--cache",
         dest="cache",
-        default=True,
+        default=False,
         action="store_true",
         help="Caching imgs to RAM for fast training.",
     )

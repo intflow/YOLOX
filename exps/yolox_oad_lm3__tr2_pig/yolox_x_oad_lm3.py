@@ -26,12 +26,12 @@ class Exp(MyExp):
 
         # --------------- transform config ----------------- #
         self.degrees = 0.0
-        self.translate = 0.1
+        self.translate = 0.0
         self.scale = (0.5, 2)
         self.mscale = (0.8, 1.6)
         self.shear = 2.0
         self.perspective = 0.0
-        self.enable_mixup = True
+        self.enable_mixup = False
 
         # --------------  training config --------------------- #
         self.warmup_epochs = 2
@@ -70,6 +70,7 @@ class Exp(MyExp):
                 preproc=TrainTransform(max_labels=50),
                 rotation=True,
                 compatible_coco=False,
+                cache=cache_img
         )
 
         dataset = MosaicDetection(
@@ -111,7 +112,7 @@ class Exp(MyExp):
         valdataset = INTFLOWDataset(
             data_dir=self.val_path,
             json_file=self.val_ann,
-            name="img_mask",
+            name="img",
             img_size=self.input_size,
             preproc=ValTransform(),
             compatible_coco=True,
