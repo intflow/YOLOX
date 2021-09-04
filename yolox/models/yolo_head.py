@@ -496,8 +496,15 @@ class YOLOXHead(nn.Module):
             loss_l1 = 0.0
 
         reg_weight = 5.0
-        lm_weight = 0.15
-        loss = reg_weight * loss_iou + loss_obj + loss_cls + loss_l1 + loss_rad + loss_lm * lm_weight
+        RAD_LM = False
+        if RAD_LM == True:
+            rad_weight = 1.0 
+            lm_weight = 0.15
+        else:
+            ##print('====Exclude radian and landmark!====')
+            rad_weight = 0.0 
+            lm_weight = 0.0
+        loss = reg_weight * loss_iou + loss_obj + loss_cls + loss_l1 + loss_rad * rad_weight + loss_lm * lm_weight
 
         return (
             loss,
@@ -505,7 +512,7 @@ class YOLOXHead(nn.Module):
             loss_obj,
             loss_cls,
             loss_l1,
-            loss_rad,
+            loss_rad * rad_weight,
             loss_lm * lm_weight,
             num_fg / max(num_gts, 1),
         )

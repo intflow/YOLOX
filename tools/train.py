@@ -17,7 +17,7 @@ from yolox.utils import configure_nccl, configure_omp, get_num_devices
 
 def make_parser():
     parser = argparse.ArgumentParser("YOLOX train parser")
-    parser.add_argument("-expn", "--experiment-name", type=str, default="yolox_x_oad_lm3__tr2_cow")
+    parser.add_argument("-expn", "--experiment-name", type=str, default="yolox_oad_lm3__crowdhuman")
     parser.add_argument("-n", "--name", type=str, default="yolox_x_oad_lm3", help="model name")
 
     # distributed
@@ -37,7 +37,7 @@ def make_parser():
     parser.add_argument(
         "-f",
         "--exp_file",
-        default='exps/yolox_oad_lm3__tr2_cow/yolox_x_oad_lm3.py',
+        default='exps/yolox_oad_lm3__crowdhuman/yolox_s_oad_lm3.py',
         type=str,
         help="plz input your expriment description file",
     )
@@ -48,8 +48,8 @@ def make_parser():
         "--pruning", default=False, action="store_true", help="train from pruned model"
     )
     #parser.add_argument("-c", "--ckpt", default=None, type=str, help="checkpoint file")
-    #parser.add_argument("-c", "--ckpt", default='YOLOX_outputs/yolox_oad_e2e_s-intflow_total_1K/latest_ckpt.pth', type=str, help="checkpoint file")
-    parser.add_argument("-c", "--ckpt", default='/data/pretrained/hcow/yolox_x_oad_lm3__intflow_total_100K_2_test2.pth', type=str, help="checkpoint file")
+    parser.add_argument("-c", "--ckpt", default='/data/pretrained/yolox_s.pth', type=str, help="checkpoint file")
+    #parser.add_argument("-c", "--ckpt", default='/data/pretrained/hcow/yolox_x_oad_lm3__intflow_total_100K_2_test2.pth', type=str, help="checkpoint file")
     #parser.add_argument("-c", "--ckpt", default='YOLOX_outputs/yolox_s_oad_lm3__intflow_total_1K/p0_ckpt.pth', type=str, help="checkpoint file")
     parser.add_argument(
         "-e",
