@@ -47,7 +47,7 @@ def make_parser():
     parser.add_argument(
         "--pruning", default=False, action="store_true", help="train from pruned model"
     )
-    #parser.add_argument("-c", "--ckpt", default='/data/pretrained/yolox_s.pth', type=str, help="checkpoint file")
+    #parser.add_argument("-c", "--ckpt", default=None, type=str, help="checkpoint file")
     #parser.add_argument("-c", "--ckpt", default='YOLOX_outputs/yolox_oad_e2e_s-intflow_total_1K/latest_ckpt.pth', type=str, help="checkpoint file")
     parser.add_argument("-c", "--ckpt", default='/data/pretrained/hcow/yolox_x_oad_lm3__intflow_total_100K_2_test2.pth', type=str, help="checkpoint file")
     #parser.add_argument("-c", "--ckpt", default='YOLOX_outputs/yolox_s_oad_lm3__intflow_total_1K/p0_ckpt.pth', type=str, help="checkpoint file")

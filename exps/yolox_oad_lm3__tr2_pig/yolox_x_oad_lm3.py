@@ -34,12 +34,12 @@ class Exp(MyExp):
         self.enable_mixup = False
 
         # --------------  training config --------------------- #
-        self.warmup_epochs = 2
+        self.warmup_epochs = 0
         self.max_epoch = 200
         self.warmup_lr = 0
         self.basic_lr_per_img = 0.01 / 64.0
         self.scheduler = "yoloxwarmcos"
-        self.no_aug_epochs = 150
+        self.no_aug_epochs = 200
         self.min_lr_ratio = 0.05
         self.ema = True
 
