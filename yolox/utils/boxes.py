@@ -271,6 +271,7 @@ def rotate_box(rbbox):
 
     corners = np.matmul(R, (corners - cents).transpose(1, 0)).transpose(1, 0) + cents
 
+    corners[corners<0.0] = 0.0
     return corners.reshape(-1).tolist()
 
 

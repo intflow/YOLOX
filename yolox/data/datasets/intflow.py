@@ -149,12 +149,12 @@ class INTFLOWDataset(Dataset):
 
         del im_ann, annotations
 
-        ##### Write overlay image for debugging
-        ###img_name = self.coco.loadImgs(id_)[0]['file_name']
-        ###im = Image.open('{}/{}/{}'.format(self.data_dir, self.name, img_name)).convert("RGB")
-        ###data = torch.ByteTensor(torch.ByteStorage.from_buffer(im.tobytes()))
-        ###data = data.float().div(255).view(*im.size[::-1], len(im.mode))
-        ###V.write_overlay(data, res, id_, 'tmp_figs') #Use only for visual debug on image augmentation an its label
+        ###### Write overlay image for debugging
+        ####img_name = self.coco.loadImgs(id_)[0]['file_name']
+        ####im = Image.open('{}/{}/{}'.format(self.data_dir, self.name, img_name)).convert("RGB")
+        ####data = torch.ByteTensor(torch.ByteStorage.from_buffer(im.tobytes()))
+        ####data = data.float().div(255).view(*im.size[::-1], len(im.mode))
+        ####V.write_overlay(data, res, id_, 'tmp_figs') #Use only for visual debug on image augmentation an its label
 
         return (res, img_info, file_name)
 

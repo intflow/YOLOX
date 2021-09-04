@@ -277,6 +277,7 @@ def write_overlay_cv(img, target, id, path):
         #print("Directory " , path ,  " already exists") 
     dets = target.copy()
     img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
+    img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
     if len(dets) > 0:
         img_overlay = annot_overlay(img, dets)
         cv2.imwrite(path + '/' + str(id)  + '.jpg', img_overlay)
@@ -296,6 +297,7 @@ def write_overlay_preproc(img, target, id, path):
     img *= 255.0
     img = img.astype(np.uint8)
     dets = target.copy()
+    img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
     img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
     if len(dets) > 0:
         img_overlay = annot_overlay(img, dets, xyxy=False)
