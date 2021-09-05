@@ -30,6 +30,9 @@ def make_parser():
     parser.add_argument(
         "--path", default="./assets/cow2.jpg", help="path to images or video"
     )
+    parser.add_argument(
+        "--save_folder", default=None, help="path to images or video output"
+    )
     parser.add_argument("--camid", type=int, default=0, help="webcam demo camera id")
     parser.add_argument(
         "--save_result",
@@ -193,7 +196,7 @@ class Predictor(object):
         return vis_res
 
 
-def image_demo(predictor, vis_folder, path, current_time, save_result):
+def image_demo(predictor, vis_folder, path, current_time, save_result, save_folder=None):
     if os.path.isdir(path):
         files = get_image_list(path)
     else:
@@ -203,9 +206,10 @@ def image_demo(predictor, vis_folder, path, current_time, save_result):
         outputs, img_info = predictor.inference(image_name)
         result_image = predictor.visual(outputs[0], img_info, predictor.confthre)
         if save_result:
-            save_folder = os.path.join(
-                vis_folder, time.strftime("%Y_%m_%d_%H_%M_%S", current_time)
-            )
+            if save_folder == None:
+                save_folder = os.path.join(
+                    vis_folder, time.strftime("%Y_%m_%d_%H_%M_%S", current_time)
+                )
             os.makedirs(save_folder, exist_ok=True)
             save_file_name = os.path.join(save_folder, os.path.basename(image_name))
             logger.info("Saving detection result in {}".format(save_file_name))
@@ -215,14 +219,15 @@ def image_demo(predictor, vis_folder, path, current_time, save_result):
             break
 
 
-def imageflow_demo(predictor, vis_folder, current_time, args):
+def imageflow_demo(predictor, vis_folder, current_time, args, save_folder=None):
     cap = cv2.VideoCapture(args.path if args.demo == "video" else args.camid)
     width = cap.get(cv2.CAP_PROP_FRAME_WIDTH)  # float
     height = cap.get(cv2.CAP_PROP_FRAME_HEIGHT)  # float
     fps = cap.get(cv2.CAP_PROP_FPS)
-    save_folder = os.path.join(
-        vis_folder, time.strftime("%Y_%m_%d_%H_%M_%S", current_time)
-    )
+    if save_folder == None:
+        save_folder = os.path.join(
+            vis_folder, time.strftime("%Y_%m_%d_%H_%M_%S", current_time)
+        )
     os.makedirs(save_folder, exist_ok=True)
     if args.demo == "video":
         save_path = os.path.join(save_folder, args.path.split("/")[-1])
@@ -314,9 +319,9 @@ def main(exp, args):
     predictor = Predictor(model, exp, classes_list, trt_file, decoder, args.device, args.legacy)
     current_time = time.localtime()
     if args.demo == "image":
-        image_demo(predictor, vis_folder, args.path, current_time, args.save_result)
+        image_demo(predictor, vis_folder, args.path, current_time, args.save_result, args.save_folder)
     elif args.demo == "video" or args.demo == "webcam":
-        imageflow_demo(predictor, vis_folder, current_time, args)
+        imageflow_demo(predictor, vis_folder, current_time, args, args.save_folder)
 
 
 if __name__ == "__main__":

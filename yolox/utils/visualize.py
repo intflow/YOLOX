@@ -28,6 +28,8 @@ def vis(img, boxes, rads, scores, cls_ids, landmarks, conf=0.5, class_names=None
         x0 = int(cx - w/2)
         y0 = int(cy - h/2)
 
+        rad = 0.0
+
         [sx1, sy1, sx2, sy2, sx3, sy3, sx4, sy4] = B.rotate_box([cx,cy,w,h,rad])
         [l1_x, l1_y, l2_x, l2_y, l3_x, l3_y] = landmark
 
