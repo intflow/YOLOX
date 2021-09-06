@@ -320,8 +320,8 @@ static bool NvDsInferParseYolox(
 	    oinfo.theta  = r.rad;
 	    oinfo.landmarksX1  = r.landmarks_x1;
 	    oinfo.landmarksY1  = r.landmarks_y1;
-	    // oinfo.landmarksX2  = r.landmarks_x2;
-	    // oinfo.landmarksY2  = r.landmarks_y2;
+	    oinfo.landmarksX2  = r.landmarks_x2;
+	    oinfo.landmarksY2  = r.landmarks_y2;
 	    // oinfo.landmarksX3  = r.landmarks_x3;
 	    // oinfo.landmarksY3  = r.landmarks_y3;
 	    oinfo.detectionConfidence = r.prob;

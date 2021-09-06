@@ -86,7 +86,9 @@ config-file=config_infer_primary.txt
 file-loop=0
 
 [ds-example]
-enable=1
+enable=0
+processing-width=640
+processing-height=480
 full-frame=0
-blur-objects=1
+blur-objects=0
 unique-id=15
