@@ -85,9 +85,6 @@ def postprocess(prediction, num_classes, conf_thre=0.7, nms_thre=0.45, class_agn
             continue
         # Get score and class with highest confidence
         obj_conf = image_pred[:, 4].unsqueeze(-1)
-        ##----------------------------------
-        image_pred[:, 6] += image_pred[:, 5] #Merge pig and cow predic into one
-        ##----------------------------------
         class_conf, class_pred = torch.max(image_pred[:, 5 : 5 + num_classes], 1, keepdim=True)
         rad_sin = image_pred[:,  7].unsqueeze(-1)
         rad_cos = image_pred[:,  8].unsqueeze(-1)
