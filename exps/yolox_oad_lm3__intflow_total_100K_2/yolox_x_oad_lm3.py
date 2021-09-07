@@ -39,7 +39,7 @@ class Exp(MyExp):
         self.warmup_lr = 0
         self.basic_lr_per_img = 0.01 / 64.0
         self.scheduler = "yoloxwarmcos"
-        self.no_aug_epochs = 15
+        self.no_aug_epochs = 300
         self.min_lr_ratio = 0.05
         self.ema = True
 
@@ -65,7 +65,7 @@ class Exp(MyExp):
         dataset = INTFLOWDataset(
                 data_dir=self.train_path,
                 json_file=self.train_ann,
-                name="img_mask",
+                name="img",
                 img_size=self.input_size,
                 preproc=TrainTransform(max_labels=50),
                 rotation=True,
