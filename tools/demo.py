@@ -322,6 +322,7 @@ def main(exp, args):
         trt_file = None
         decoder = None
 
+    classes_list = INTFLOW_CLASSES
     predictor = Predictor(model, exp, classes_list, trt_file, decoder, args.device, args.fp16, args.legacy)
     current_time = time.localtime()
     if args.demo == "image":

@@ -17,7 +17,7 @@ from yolox.utils import configure_nccl, configure_omp, get_num_devices
 
 def make_parser():
     parser = argparse.ArgumentParser("YOLOX train parser")
-    parser.add_argument("-expn", "--experiment-name", type=str, default="yolox_oad_lm3__crowdhuman")
+    parser.add_argument("-expn", "--experiment-name", type=str, default="yolox_oad_lm3__tr2_pig")
     parser.add_argument("-n", "--name", type=str, default="yolox_x_oad_lm3", help="model name")
 
     # distributed
@@ -37,7 +37,7 @@ def make_parser():
     parser.add_argument(
         "-f",
         "--exp_file",
-        default='exps/yolox_oad_lm3__crowdhuman/yolox_s_oad_lm3.py',
+        default='exps/yolox_oad_lm3__tr2_pig/yolox_s_oad_lm3.py',
         type=str,
         help="plz input your expriment description file",
     )

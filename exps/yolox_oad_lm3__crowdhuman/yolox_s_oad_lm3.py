@@ -17,18 +17,25 @@ class Exp(MyExp):
 # ---------------- dataloader config ---------------- #
         # set worker to 4 for shorter dataloader init time
         self.data_num_workers = 4
-        self.input_size = (640, 640)
-        self.random_size = (14, 26)
+        self.input_size = (640, 640)  # (height, width)
+        # Actual multiscale ranges: [640-5*32, 640+5*32].
+        # To disable multiscale training, set the
+        # self.multiscale_range to 0.
+        self.multiscale_range = 5
         self.train_path = '/data/CrowdHuman/CrowdHuman_train'
         self.val_path = '/data/CrowdHuman/CrowdHuman_val'
         self.train_ann = "label_odtk_025pi_center.json"
         self.val_ann = "label_coco_bbox.json"
 
         # --------------- transform config ----------------- #
-        self.degrees = 0.0
+        self.mosaic_prob = 1.0
+        self.mixup_prob = 1.0
+        self.hsv_prob = 1.0
+        self.flip_prob = 0.5
+        self.degrees = 10.0
         self.translate = 0.1
-        self.scale = (0.5, 2)
-        self.mscale = (0.8, 1.6)
+        self.mosaic_scale = (0.1, 2)
+        self.mixup_scale = (0.5, 1.5)
         self.shear = 2.0
         self.perspective = 0.0
         self.enable_mixup = True
@@ -51,7 +58,7 @@ class Exp(MyExp):
 
         # -----------------  testing config ------------------ #
         self.test_size = (640, 640)
-        self.test_conf = 0.5
+        self.test_conf = 0.01
         self.nmsthre = 0.65
 
     def get_data_loader(self, batch_size, is_distributed, no_aug=False, cache_img=False):
@@ -67,21 +74,31 @@ class Exp(MyExp):
                 json_file=self.train_ann,
                 name="img",
                 img_size=self.input_size,
-                preproc=TrainTransform(max_labels=50),
-                rotation=True,
+                preproc=TrainTransform(
+                    max_labels=50,
+                    flip_prob=self.flip_prob,
+                    hsv_prob=self.hsv_prob),rotation=True,
                 compatible_coco=False,
+                cache=cache_img,
         )
 
         dataset = MosaicDetection(
             dataset,
             mosaic=not no_aug,
             img_size=self.input_size,
-            preproc=TrainTransform(max_labels=120),
+            preproc=TrainTransform(
+                max_labels=120,
+                flip_prob=self.flip_prob,
+                hsv_prob=self.hsv_prob),
             degrees=self.degrees,
             translate=self.translate,
-            scale=self.scale,
+            mosaic_scale=self.mosaic_scale,
+            mixup_scale=self.mixup_scale,
             shear=self.shear,
             perspective=self.perspective,
+            enable_mixup=self.enable_mixup,
+            mosaic_prob=self.mosaic_prob,
+            mixup_prob=self.mixup_prob,
         )
 
         self.dataset = dataset
@@ -89,8 +106,6 @@ class Exp(MyExp):
         if is_distributed:
             batch_size = batch_size // dist.get_world_size()
             sampler = InfiniteSampler(len(self.dataset), seed=self.seed if self.seed else 0)
-        else:
-            sampler = torch.utils.data.RandomSampler(self.dataset)
 
         batch_sampler = YoloBatchSampler(
             sampler=sampler,
@@ -101,6 +116,7 @@ class Exp(MyExp):
 
         dataloader_kwargs = {"num_workers": self.data_num_workers, "pin_memory": True}
         dataloader_kwargs["batch_sampler"] = batch_sampler
+
         train_loader = DataLoader(self.dataset, **dataloader_kwargs)
 
         return train_loader
@@ -139,7 +155,7 @@ class Exp(MyExp):
     def get_evaluator(self, batch_size, is_distributed, testdev=False):
         from yolox.evaluators import INTFLOWEvaluator
 
-        val_loader = self.get_eval_loader(batch_size, is_distributed, testdev=testdev)
+        val_loader = self.get_eval_loader(batch_size, is_distributed, testdev)
         evaluator = INTFLOWEvaluator(
             dataloader=val_loader,
             img_size=self.test_size,
@@ -149,3 +165,6 @@ class Exp(MyExp):
             testdev=testdev,
         )
         return evaluator
+
+    def eval(self, model, evaluator, is_distributed, half=False):
+        return evaluator.evaluate(model, is_distributed, half)

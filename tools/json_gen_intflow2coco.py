@@ -182,7 +182,7 @@ for num1, each_file in enumerate(tqdm.tqdm(json_list)):
         organized_anno = [{
             "id": int(id),
             "image_id": int(img_id),
-            "category_id": 0,#int(category_id),
+            "category_id": 0,#int(category_id), #Set only for tr2 dataset
             "pose_id": int(pose_id),
             "bbox": [
                 x1,
