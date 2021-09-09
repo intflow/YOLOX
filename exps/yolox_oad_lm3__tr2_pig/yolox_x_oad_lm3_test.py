@@ -22,17 +22,17 @@ class Exp(MyExp):
         # To disable multiscale training, set the
         # self.multiscale_range to 0.
         self.multiscale_range = 5
-        self.train_path = '/data/EdgeFarm_pig/tr2_pig_5K'
+        self.train_path = '/data/EdgeFarm_pig/tr2_pig_1K'
         self.val_path = '/data/EdgeFarm_pig/tr2_pig_1K'
         self.train_ann = "label_odtk_025pi_center.json"
         self.val_ann = "label_coco_rbbox.json"
 
         # --------------- transform config ----------------- #
-        self.mosaic_prob = 0.2
-        self.mixup_prob = 0.2
-        self.hsv_prob = 0.2
+        self.mosaic_prob = 1.0
+        self.mixup_prob = 1.0
+        self.hsv_prob = 1.0
         self.flip_prob = 0.5
-        self.degrees = 0.0
+        self.degrees = 10.0
         self.translate = 0.1
         self.mosaic_scale = (0.1, 2)
         self.mixup_scale = (0.5, 1.5)
