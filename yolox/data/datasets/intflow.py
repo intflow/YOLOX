@@ -87,7 +87,7 @@ class INTFLOWDataset(Dataset):
         cache_file = self.data_dir + "/img_resized_cache_" + self.name + ".array"
         if not os.path.exists(cache_file):
             logger.info(
-                "Caching images for the frist time. This might take about 20 minutes for COCO"
+                "Caching images for the fisrt time. This might take about 20 minutes for COCO"
             )
             self.imgs = np.memmap(
                 cache_file,
@@ -144,7 +144,11 @@ class INTFLOWDataset(Dataset):
             res[ix, 5] = cls
             res[ix, 6:6+2*3] = obj["landmark"]
 
+        r = min(self.img_size[0] / height, self.img_size[1] / width)
+        res[:, :4] *= r
+
         img_info = (height, width)
+        resized_info = (int(height * r), int(width * r))
 
         file_name = im_ann["file_name"] if "file_name" in im_ann else "{:012}".format(id_) + ".jpg"
 
@@ -157,7 +161,7 @@ class INTFLOWDataset(Dataset):
         ####data = data.float().div(255).view(*im.size[::-1], len(im.mode))
         ####V.write_overlay(data, res, id_, 'tmp_figs') #Use only for visual debug on image augmentation an its label
 
-        return (res, img_info, file_name)
+        return (res, img_info, resized_info, file_name)
 
     def load_anno_from_ids_bbox(self, id_):
         im_ann = self.coco.loadImgs(id_)[0]
@@ -181,7 +185,11 @@ class INTFLOWDataset(Dataset):
             res[ix, 0:4] = obj["clean_bbox"]
             res[ix, 4] = cls
 
+        r = min(self.img_size[0] / height, self.img_size[1] / width)
+        res[:, :4] *= r
+
         img_info = (height, width)
+        resized_info = (int(height * r), int(width * r))
 
         file_name = im_ann["file_name"] if "file_name" in im_ann else "{:012}".format(id_) + ".jpg"
 
@@ -194,7 +202,7 @@ class INTFLOWDataset(Dataset):
         ###data = data.float().div(255).view(*im.size[::-1], len(im.mode))
         ###V.write_overlay(data, res, id_, 'tmp_figs') #Use only for visual debug on image augmentation an its label
 
-        return (res, img_info, file_name)        
+        return (res, img_info, resized_info, file_name)        
 
     def load_anno_from_ids_coco(self, id_):
         im_ann = self.coco.loadImgs(id_)[0]
@@ -206,9 +214,9 @@ class INTFLOWDataset(Dataset):
         for obj in annotations:
             x1 = np.max((0, obj["bbox"][0]))
             y1 = np.max((0, obj["bbox"][1]))
-            x2 = np.min((width - 1, x1 + np.max((0, obj["bbox"][2] - 1))))
-            y2 = np.min((height - 1, y1 + np.max((0, obj["bbox"][3] - 1))))
-            if obj["area"] > 0 and x2 > x1 and y2 > y1:
+            x2 = np.min((width, x1 + np.max((0, obj["bbox"][2]))))
+            y2 = np.min((height, y1 + np.max((0, obj["bbox"][3]))))
+            if obj["area"] > 0 and x2 >= x1 and y2 >= y1:
                 obj["clean_bbox"] = [x1, y1, x2, y2]
                 objs.append(obj)
 
@@ -221,9 +229,17 @@ class INTFLOWDataset(Dataset):
             res[ix, 0:4] = obj["clean_bbox"]
             res[ix, 4] = cls
 
-        img_info = (height, width)
+        r = min(self.img_size[0] / height, self.img_size[1] / width)
+        res[:, :4] *= r
 
-        file_name = im_ann["file_name"] if "file_name" in im_ann else "{:012}".format(id_) + ".jpg"
+        img_info = (height, width)
+        resized_info = (int(height * r), int(width * r))
+
+        file_name = (
+            im_ann["file_name"]
+            if "file_name" in im_ann
+            else "{:012}".format(id_) + ".jpg"
+        )
 
         del im_ann, annotations
 
@@ -234,22 +250,40 @@ class INTFLOWDataset(Dataset):
         ####data = data.float().div(255).view(*im.size[::-1], len(im.mode))
         ####V.write_overlay(data, res, id_, 'tmp_figs') #Use only for visual debug on image augmentation an its label
 
-        return (res, img_info, file_name)
+        return (res, img_info, resized_info, file_name)
 
     def load_anno(self, index):
         return self.annotations[index][0]
 
-    def pull_item(self, index):
-        id_ = self.ids[index]
+    def load_resized_img(self, index):
+        img = self.load_image(index)
+        r = min(self.img_size[0] / img.shape[0], self.img_size[1] / img.shape[1])
+        resized_img = cv2.resize(
+            img,
+            (int(img.shape[1] * r), int(img.shape[0] * r)),
+            interpolation=cv2.INTER_LINEAR,
+        ).astype(np.uint8)
+        return resized_img
 
-        res, img_info, file_name = self.annotations[index]
-        # load image and preprocess
-        img_file = os.path.join(
-            self.data_dir, self.name, file_name
-        )
+    def load_image(self, index):
+        file_name = self.annotations[index][3]
+
+        img_file = os.path.join(self.data_dir, self.name, file_name)
 
         img = cv2.imread(img_file)
         assert img is not None
+
+        return img
+
+    def pull_item(self, index):
+        id_ = self.ids[index]
+
+        res, img_info, resized_info, _ = self.annotations[index]
+        if self.imgs is not None:
+            pad_img = self.imgs[index]
+            img = pad_img[: resized_info[0], : resized_info[1], :].copy()
+        else:
+            img = self.load_resized_img(index)
 
         return img, res.copy(), img_info, np.array([id_])
 

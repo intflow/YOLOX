@@ -22,7 +22,7 @@ class Exp(MyExp):
         # To disable multiscale training, set the
         # self.multiscale_range to 0.
         self.multiscale_range = 5
-        self.train_path = '/data/EdgeFarm_pig/tr2_pig_1K'
+        self.train_path = '/data/EdgeFarm_pig/tr2_pig_5K'
         self.val_path = '/data/EdgeFarm_pig/tr2_pig_1K'
         self.train_ann = "label_odtk_025pi_center.json"
         self.val_ann = "label_coco_rbbox.json"
@@ -72,7 +72,7 @@ class Exp(MyExp):
         dataset = INTFLOWDataset(
                 data_dir=self.train_path,
                 json_file=self.train_ann,
-                name="img_mask",
+                name="img",
                 img_size=self.input_size,
                 preproc=TrainTransform(
                     max_labels=50,
@@ -127,7 +127,7 @@ class Exp(MyExp):
         valdataset = INTFLOWDataset(
             data_dir=self.val_path,
             json_file=self.val_ann,
-            name="img_mask",
+            name="img",
             img_size=self.input_size,
             preproc=ValTransform(),
             compatible_coco=True,

@@ -72,7 +72,7 @@ class Exp(MyExp):
         dataset = INTFLOWDataset(
                 data_dir=self.train_path,
                 json_file=self.train_ann,
-                name="img_mask",
+                name="img",
                 img_size=self.input_size,
                 preproc=TrainTransform(
                     max_labels=50,
@@ -127,7 +127,7 @@ class Exp(MyExp):
         valdataset = INTFLOWDataset(
             data_dir=self.val_path,
             json_file=self.val_ann,
-            name="img_mask",
+            name="img",
             img_size=self.input_size,
             preproc=ValTransform(),
             compatible_coco=True,
