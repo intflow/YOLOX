@@ -47,6 +47,7 @@ class INTFLOWDataset(Dataset):
             data_dir = os.path.join(get_yolox_datadir(), "INTFLOW")
         self.data_dir = data_dir
         self.json_file = json_file
+        self.imgs = None
         self.name = name
         self.img_size = img_size
         self.preproc = preproc
@@ -64,6 +65,9 @@ class INTFLOWDataset(Dataset):
     def __len__(self):
         return len(self.ids)
 
+    def __del__(self):
+        del self.imgs
+        
     def _load_intflow_annotations(self):
         if self.rotation == True:
             annots = [self.load_anno_from_ids_rbbox(_ids) for _ids in self.ids]
