@@ -25,8 +25,13 @@ class Exp(BaseExp):
         # ---------------- dataloader config ---------------- #
         # set worker to 4 for shorter dataloader init time
         self.data_num_workers = 4
-        self.input_size = (640, 640)
-        self.random_size = (14, 26)
+        self.input_size = (640, 640)  # (height, width)
+        # Actual multiscale ranges: [640-5*32, 640+5*32].
+        # To disable multiscale training, set the
+        # self.multiscale_range to 0.
+        self.multiscale_range = 5
+        # You can uncomment this line to specify a multiscale range
+        # self.random_size = (14, 26)
         self.data_dir = None
         self.train_ann = "instances_train2017.json"
         self.val_ann = "instances_val2017.json"
@@ -34,10 +39,12 @@ class Exp(BaseExp):
         # --------------- transform config ----------------- #
         self.mosaic_prob = 1.0
         self.mixup_prob = 1.0
+        self.hsv_prob = 1.0
+        self.flip_prob = 0.5
         self.degrees = 10.0
         self.translate = 0.1
-        self.scale = (0.1, 2)
-        self.mscale = (0.8, 1.6)
+        self.mosaic_scale = (0.1, 2)
+        self.mixup_scale = (0.5, 1.5)
         self.shear = 2.0
         self.perspective = 0.0
         self.enable_mixup = True
@@ -110,7 +117,10 @@ class Exp(BaseExp):
                 data_dir=self.data_dir,
                 json_file=self.train_ann,
                 img_size=self.input_size,
-                preproc=TrainTransform(max_labels=50),
+                preproc=TrainTransform(
+                    max_labels=50,
+                    flip_prob=self.flip_prob,
+                    hsv_prob=self.hsv_prob),
                 cache=cache_img,
             )
 
@@ -118,10 +128,14 @@ class Exp(BaseExp):
             dataset,
             mosaic=not no_aug,
             img_size=self.input_size,
-            preproc=TrainTransform(max_labels=120),
+            preproc=TrainTransform(
+                max_labels=120,
+                flip_prob=self.flip_prob,
+                hsv_prob=self.hsv_prob),
             degrees=self.degrees,
             translate=self.translate,
-            scale=self.scale,
+            mosaic_scale=self.mosaic_scale,
+            mixup_scale=self.mixup_scale,
             shear=self.shear,
             perspective=self.perspective,
             enable_mixup=self.enable_mixup,
@@ -159,6 +173,10 @@ class Exp(BaseExp):
 
         if rank == 0:
             size_factor = self.input_size[1] * 1.0 / self.input_size[0]
+            if not hasattr(self, 'random_size'):
+                min_size = int(self.input_size[0] / 32) - self.multiscale_range
+                max_size = int(self.input_size[0] / 32) + self.multiscale_range
+                self.random_size = (min_size, max_size)
             size = random.randint(*self.random_size)
             size = (int(32 * size), 32 * int(size * size_factor))
             tensor[0] = size[0]
@@ -172,12 +190,14 @@ class Exp(BaseExp):
         return input_size
 
     def preprocess(self, inputs, targets, tsize):
-        scale = tsize[0] / self.input_size[0]
-        if scale != 1:
+        scale_y = tsize[0] / self.input_size[0]
+        scale_x = tsize[1] / self.input_size[1]
+        if scale_x != 1 or scale_y != 1:
             inputs = nn.functional.interpolate(
                 inputs, size=tsize, mode="bilinear", align_corners=False
             )
-            targets[..., 1:] = targets[..., 1:] * scale
+            targets[..., 1::2] = targets[..., 1::2] * scale_x
+            targets[..., 2::2] = targets[..., 2::2] * scale_y
         return inputs, targets
 
     def get_optimizer(self, batch_size):

@@ -42,9 +42,9 @@ class MosaicDetection(Dataset):
 
     def __init__(
         self, dataset, img_size, mosaic=True, preproc=None,
-        degrees=10.0, translate=0.1, scale=(0.5, 1.5), mscale=(0.5, 1.5),
-        shear=2.0, perspective=0.0, enable_mixup=True,
-        mosaic_prob=1.0, mixup_prob=1.0, *args
+        degrees=10.0, translate=0.1, mosaic_scale=(0.5, 1.5),
+        mixup_scale=(0.5, 1.5), shear=2.0, perspective=0.0,
+        enable_mixup=True, mosaic_prob=1.0, mixup_prob=1.0, *args
     ):
         """
 
@@ -55,8 +55,8 @@ class MosaicDetection(Dataset):
             preproc (func):
             degrees (float):
             translate (float):
-            scale (tuple):
-            mscale (tuple):
+            mosaic_scale (tuple):
+            mixup_scale (tuple):
             shear (float):
             perspective (float):
             enable_mixup (bool):
@@ -67,10 +67,10 @@ class MosaicDetection(Dataset):
         self.preproc = preproc
         self.degrees = degrees
         self.translate = translate
-        self.scale = scale
+        self.scale = mosaic_scale
         self.shear = shear
         self.perspective = perspective
-        self.mixup_scale = mscale
+        self.mixup_scale = mixup_scale
         self.enable_mosaic = mosaic
         self.enable_mixup = enable_mixup
         self.mosaic_prob = mosaic_prob
@@ -95,7 +95,7 @@ class MosaicDetection(Dataset):
             indices = [idx] + [random.randint(0, len(self._dataset) - 1) for _ in range(3)]
 
             for i_mosaic, index in enumerate(indices):
-                img, _labels, _, _ = self._dataset.pull_item(index)
+                img, _labels, _, img_id = self._dataset.pull_item(index)
                 h0, w0 = img.shape[:2]  # orig hw
                 scale = min(1. * input_h / h0, 1. * input_w / w0)
                 img = cv2.resize(
@@ -174,13 +174,13 @@ class MosaicDetection(Dataset):
 
             ###V.write_overlay_cv(mosaic_img, mosaic_labels, idx, 'tmp_figs_mixup') #Use only for visual debug on image augmentation an its label
             ###V.write_overlay_preproc(mix_img, padded_labels, idx, 'tmp_figs_preproc') #Use only for visual debug on image augmentation an its label
-            return mix_img, padded_labels, img_info, np.array([idx])
+            return mix_img, padded_labels, img_info, img_id
 
         else:
             self._dataset._input_dim = self.input_dim
-            img, label, img_info, id_ = self._dataset.pull_item(idx)
+            img, label, img_info, img_id = self._dataset.pull_item(idx)
             img, label = self.preproc(img, label, self.input_dim)
-            return img, label, img_info, id_
+            return img, label, img_info, img_id
 
     def mixup(self, origin_img, origin_labels, input_dim):
         jit_factor = random.uniform(*self.mixup_scale)

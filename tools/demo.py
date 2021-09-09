@@ -119,6 +119,7 @@ class Predictor(object):
         trt_file=None,
         decoder=None,
         device="cpu",
+        fp16=False,
         legacy=False,
     ):
         self.model = model
@@ -129,6 +130,7 @@ class Predictor(object):
         self.nmsthre = exp.nmsthre
         self.test_size = exp.test_size
         self.device = device
+        self.fp16 = fp16
         self.preproc = ValTransform(legacy=legacy)
         if trt_file is not None:
             from torch2trt import TRTModule
@@ -158,8 +160,11 @@ class Predictor(object):
 
         img, _ = self.preproc(img, None, self.test_size)
         img = torch.from_numpy(img).unsqueeze(0)
+        img = img.float()
         if self.device == "gpu":
             img = img.cuda()
+            if self.fp16:
+                img = img.half()  # to FP16
 
         with torch.no_grad():
             t0 = time.time()
@@ -167,7 +172,8 @@ class Predictor(object):
             if self.decoder is not None:
                 outputs = self.decoder(outputs, dtype=outputs.type())
             outputs = postprocess(
-                outputs, self.num_classes, self.confthre, self.nmsthre
+                outputs, self.num_classes, self.confthre,
+                self.nmsthre, class_agnostic=True
             )
             logger.info("Infer time: {:.4f}s".format(time.time() - t0))
         return outputs, img_info
@@ -284,6 +290,8 @@ def main(exp, args):
 
     if args.device == "gpu":
         model.cuda()
+        if args.fp16:
+            model.half()  # to FP16
     model.eval()
 
     if not args.trt:
@@ -314,8 +322,7 @@ def main(exp, args):
         trt_file = None
         decoder = None
 
-    classes_list = INTFLOW_CLASSES
-    predictor = Predictor(model, exp, classes_list, trt_file, decoder, args.device, args.legacy)
+    predictor = Predictor(model, exp, classes_list, trt_file, decoder, args.device, args.fp16, args.legacy)
     current_time = time.localtime()
     if args.demo == "image":
         image_demo(predictor, vis_folder, args.path, current_time, args.save_result, args.save_folder)
