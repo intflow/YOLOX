@@ -150,6 +150,7 @@ class INTFLOWDataset(Dataset):
 
         r = min(self.img_size[0] / height, self.img_size[1] / width)
         res[:, :4] *= r
+        res[:, 6:6+2*3] *= r
 
         img_info = (height, width)
         resized_info = (int(height * r), int(width * r))
