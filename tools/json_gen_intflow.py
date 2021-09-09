@@ -13,9 +13,9 @@ sys.path.append(p_folder)
 sys.path.append(pp_folder)
 import yolox.utils.boxes as B
 
-root = '/data/EdgeFarm_cow/tr2_cow_5K'
+root = '/data/EdgeFarm_pig/tr2_pig_5K'
 #root = '/data/EdgeFarm_cow/intflow_total_1K'
-img_folder_path = os.path.join(root, 'img_mask')
+img_folder_path = os.path.join(root, 'img')
 train_label_path = os.path.join(root, 'label')
 train_label_merge_out = os.path.join(root, 'label_odtk_025pi_center.json')
 
@@ -175,7 +175,7 @@ for num1, each_file in enumerate(tqdm.tqdm(json_list)):
         organized_anno = [{
             "id": int(id),
             "image_id": int(img_id),
-            "category_id": int(category_id),
+            "category_id": 0,#int(category_id),
             "pose_id": int(pose_id),
             "bbox": [
                 cx,
@@ -239,12 +239,12 @@ for num1, each_file in enumerate(tqdm.tqdm(json_list)):
 #]
 
 categories = [
+    ##{
+    ##    "id": 0,
+    ##    "name": "cow"
+    ##},
     {
         "id": 0,
-        "name": "cow"
-    },
-    {
-        "id": 1,
         "name": "pig"
     }
 ]
