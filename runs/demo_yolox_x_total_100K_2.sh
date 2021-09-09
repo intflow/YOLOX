@@ -30,8 +30,7 @@
 
 python3 tools/demo.py --demo video -expn yolox_x_oad_lm3__intflow_total_100K_2 -n yolox_x_oad_lm3 \
 -f exps/yolox_oad_lm3__intflow_total_100K_2/yolox_x_oad_lm3.py \
--c /data/pretrained/hcow/yolox_x_oad_lm3__intflow_total_100K_2_test2.pth \
---path '/data/test_videos/[gwangjufarm_breeding 1번] 2021. 9. 7. 오후 1_40_34.mp4' \
+-c /data/pretrained/hcow/yolox_x_oad_lm3__intflow_total_100K_2_test3.pth \
+--path '/data/test videos3/[moonfarm_breeding 5번]2021.09.09 오후 14_33.mp4' \
 --save_folder /data/yolox_out \
---conf 0.3 --nms 0.3 --tsize 640 --save_result --device gpu
-
+--conf 0.3 --nms 0.45 --tsize 640 --save_result --device gpu 

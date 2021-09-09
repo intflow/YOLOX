@@ -65,11 +65,12 @@ class Exp(MyExp):
         dataset = INTFLOWDataset(
                 data_dir=self.train_path,
                 json_file=self.train_ann,
-                name="img",
+                name="img_mask",
                 img_size=self.input_size,
                 preproc=TrainTransform(max_labels=50),
                 rotation=True,
                 compatible_coco=False,
+                cache=cache_img
         )
 
         dataset = MosaicDetection(

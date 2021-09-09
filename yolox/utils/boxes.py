@@ -50,7 +50,7 @@ def postprocess_nms(prediction, num_classes, conf_thre=0.7, nms_thre=0.45, class
             continue
         # Get score and class with highest confidence
         class_conf, class_pred = torch.max(image_pred[:, 6 : 6 + num_classes], 1, keepdim=True)
-        conf_mask = (torch.sqrt(image_pred[:, 5] * class_conf.squeeze() + 1e-6) >= conf_thre).squeeze()
+        conf_mask = (image_pred[:, 5] * class_conf.squeeze() + 1e-6 >= conf_thre).squeeze()
         detections = torch.cat((image_pred[:, :6], class_conf, class_pred.float()), 1)
         detections = detections[conf_mask]
         if not detections.size(0):
@@ -90,7 +90,7 @@ def postprocess(prediction, num_classes, conf_thre=0.7, nms_thre=0.45, class_agn
         rad_cos = image_pred[:,  8].unsqueeze(-1)
         rad = torch.atan2(rad_sin,rad_cos)
         landmarks = image_pred[:, 9:9+2*3]
-        conf_mask = (torch.sqrt(obj_conf.squeeze() * class_conf.squeeze() + 1e-6) >= conf_thre).squeeze()
+        conf_mask = (obj_conf.squeeze() * class_conf.squeeze() >= conf_thre).squeeze()
         detections = torch.cat((image_pred[:, :4], obj_conf, class_conf, class_pred.float(), rad, landmarks), 1)
         detections = detections[conf_mask]
         if not detections.size(0):
@@ -99,13 +99,13 @@ def postprocess(prediction, num_classes, conf_thre=0.7, nms_thre=0.45, class_agn
         if class_agnostic:
             nms_out_index = torchvision.ops.nms(
                 detections[:, :4],
-                torch.sqrt(detections[:, 4] * detections[:, 5] + 1e-4),
+                detections[:, 4] * detections[:, 5],
                 nms_thre,
             )
         else:
             nms_out_index = torchvision.ops.batched_nms(
                 detections[:, :4],
-                torch.sqrt(detections[:, 4] * detections[:, 5] + 1e-4),
+                detections[:, 4] * detections[:, 5],
                 detections[:, 6],
                 nms_thre,
             )
@@ -128,13 +128,13 @@ def postprocess(prediction, num_classes, conf_thre=0.7, nms_thre=0.45, class_agn
         if class_agnostic:
             nms_out_index = torchvision.ops.nms(
                 detections[:, :4],
-                torch.sqrt(detections[:, 4] * detections[:, 5] + 1e-4),
+                detections[:, 4] * detections[:, 5],
                 nms_thre,
             )
         else:
             nms_out_index = torchvision.ops.batched_nms(
                 detections[:, :4],
-                torch.sqrt(detections[:, 4] * detections[:, 5] + 1e-4),
+                detections[:, 4] * detections[:, 5],
                 detections[:, 6],
                 nms_thre,
             )

@@ -188,7 +188,6 @@ class Predictor(object):
 
         cls = output[:, 6]
         scores = output[:, 4] * output[:, 5]
-        scores = torch.sqrt(scores + 1e-6)
         rads = output[:,7]
 
         vis_res = vis(img, bboxes, rads, scores, cls, landmarks, cls_conf, self.cls_names)
