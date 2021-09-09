@@ -21,7 +21,7 @@ network-type=0
 cluster-mode=2
 maintain-aspect-ratio=0
 parse-bbox-func-name=NvDsInferParseCustomYolox
-custom-lib-path=nvdsinfer_custom_impl_yolox/libnvdsinfer_custom_impl_yolox.so
+custom-lib-path=/works/YOLOX/YOLOX-deepstream/nvdsinfer_custom_impl_yolox/libnvdsinfer_custom_impl_yolox.so
 
 [class-attrs-all]
 pre-cluster-threshold=0.25

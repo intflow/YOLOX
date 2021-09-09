@@ -32,7 +32,7 @@ LFLAGS:= -shared -Wl,--start-group $(LIBS) -Wl,--end-group -fopenmp
 INCS:= $(wildcard *.h)
 SRCFILES:= nvdsparsebbox_yolox.cpp 
 
-TARGET_LIB:= libnvdsinfer_custom_impl_yolox.so
+TARGET_LIB:= /opt/nvidia/deepstream/deepstream-5.1/sources/apps/sample_apps/deepstream_custompipe/libnvdsinfer_custom_impl_yolox.so
 
 TARGET_OBJS:= $(SRCFILES:.cpp=.o)
 TARGET_OBJS:= $(TARGET_OBJS:.cu=.o)

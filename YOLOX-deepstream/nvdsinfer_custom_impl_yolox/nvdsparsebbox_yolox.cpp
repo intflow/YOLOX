@@ -158,7 +158,28 @@ static void nms_sorted_bboxes(const std::vector<Object>& faceobjects, std::vecto
             picked.push_back(i);
     }
 }
+static void Switch_W_H(std::vector<Object>& faceobjects, std::vector<int>& picked)
+{
+    for (int i = 0; i < faceobjects.size(); i++)
+    {
+        if (faceobjects[i].rect.width>faceobjects[i].rect.height)
+        {
+            float temp=0;
+            std::cout<<"width: "<<faceobjects[i].rect.width<<"height: "<<faceobjects[i].rect.height<<"theta: "<<faceobjects[i].rad<<std::endl;
+            //Switch w and h
+            temp=faceobjects[i].rect.width;
+            faceobjects[i].rect.width=faceobjects[i].rect.height;
+            faceobjects[i].rect.height=temp;
+            // Add 0.5pi
+            faceobjects[i].rad=faceobjects[i].rad+ 1.570796;
 
+
+        }
+        
+    }
+
+
+}
 
 static void generate_yolox_proposals(std::vector<GridAndStride> grid_strides, float* feat_blob, float prob_threshold, std::vector<Object>& objects)
 {
@@ -236,6 +257,8 @@ static void decode_outputs(float* prob, std::vector<Object>& objects, float scal
         qsort_descent_inplace(proposals);
 
         std::vector<int> picked;
+        nms_sorted_bboxes(proposals, picked, NMS_THRESH);
+        Switch_W_H(proposals,picked);
         nms_sorted_bboxes(proposals, picked, NMS_THRESH);
 
 
@@ -320,13 +343,13 @@ static bool NvDsInferParseYolox(
 	    oinfo.theta  = r.rad;
 	    oinfo.landmarksX1  = r.landmarks_x1;
 	    oinfo.landmarksY1  = r.landmarks_y1;
-	    oinfo.landmarksX2  = r.landmarks_x2;
-	    oinfo.landmarksY2  = r.landmarks_y2;
+	    // oinfo.landmarksX2  = r.landmarks_x2;
+	    // oinfo.landmarksY2  = r.landmarks_y2;
 	    // oinfo.landmarksX3  = r.landmarks_x3;
 	    // oinfo.landmarksY3  = r.landmarks_y3;
 	    oinfo.detectionConfidence = r.prob;
 	    objectList.push_back(oinfo);
-        std::cout<<"left "<<oinfo.left<<"top "<<oinfo.top<<"width "<<oinfo.width<<"height "<<oinfo.height<<std::endl;
+        //std::cout<<"left "<<oinfo.left<<"top "<<oinfo.top<<"width "<<oinfo.width<<"height "<<oinfo.height<<std::endl;
     }
     return true;
 }

@@ -50,6 +50,13 @@ cv::Mat static_resize(cv::Mat& img) {
 struct Object
 {
     cv::Rect_<float> rect;
+    float rad;
+    float landmarks_x1;
+    float landmarks_y1;
+    float landmarks_x2;
+    float landmarks_y2;
+    float landmarks_x3;
+    float landmarks_y3;
     int label;
     float prob;
 };
@@ -160,7 +167,27 @@ static void nms_sorted_bboxes(const std::vector<Object>& faceobjects, std::vecto
             picked.push_back(i);
     }
 }
+static void Switch_W_H(std::vector<Object>& faceobjects, std::vector<int>& picked)
+{
+    for (int i = 0; i < faceobjects.size(); i++)
+    {
+        if (faceobjects[i].rect.width>faceobjects[i].rect.height)
+        {
+            float temp=0;
+            //Switch w and h
+            temp=faceobjects[i].rect.width;
+            faceobjects[i].rect.width=faceobjects[i].rect.height;
+            faceobjects[i].rect.height=temp;
+            // Add 0.5pi
+            faceobjects[i].rad=faceobjects[i].rad+ 1.570796;
 
+
+        }
+        
+    }
+
+
+}
 
 static void generate_yolox_proposals(std::vector<GridAndStride> grid_strides, float* feat_blob, float prob_threshold, std::vector<Object>& objects)
 {
@@ -182,7 +209,15 @@ static void generate_yolox_proposals(std::vector<GridAndStride> grid_strides, fl
         float h = exp(feat_blob[basic_pos+3]) * stride;
         float x0 = x_center - w * 0.5f;
         float y0 = y_center - h * 0.5f;
-
+        float rad_sin=feat_blob[basic_pos+7];
+        float rad_cos=feat_blob[basic_pos+8];
+        float rad=atan2(rad_sin,rad_cos);
+        float landmark_x1=(feat_blob[basic_pos+9] + grid0) * stride;
+        float landmark_y1=(feat_blob[basic_pos+10] + grid1) * stride;
+        float landmark_x2=(feat_blob[basic_pos+11] + grid0) * stride;
+        float landmark_y2=(feat_blob[basic_pos+12] + grid1) * stride;
+        float landmark_x3=(feat_blob[basic_pos+13] + grid0) * stride;
+        float landmark_y3=(feat_blob[basic_pos+14] + grid1) * stride;
         float box_objectness = feat_blob[basic_pos+4];
         for (int class_idx = 0; class_idx < NUM_CLASSES; class_idx++)
         {
@@ -197,6 +232,14 @@ static void generate_yolox_proposals(std::vector<GridAndStride> grid_strides, fl
                 obj.rect.height = h;
                 obj.label = class_idx;
                 obj.prob = box_prob;
+
+                obj.landmarks_x1=landmark_x1;
+                obj.landmarks_y1=landmark_y1;
+                obj.landmarks_x2=landmark_x2;
+                obj.landmarks_y2=landmark_y2;
+                obj.landmarks_x3=landmark_x3;
+                obj.landmarks_y3=landmark_y3;
+                obj.rad=rad;
 
                 objects.push_back(obj);
             }
@@ -238,6 +281,8 @@ static void decode_outputs(float* prob, std::vector<Object>& objects, float scal
 
         std::vector<int> picked;
         nms_sorted_bboxes(proposals, picked, NMS_THRESH);
+        Switch_W_H(proposals, picked);
+        nms_sorted_bboxes(proposals, picked, NMS_THRESH);
 
 
         int count = picked.size();
@@ -254,6 +299,12 @@ static void decode_outputs(float* prob, std::vector<Object>& objects, float scal
             float y0 = (objects[i].rect.y) / scale;
             float x1 = (objects[i].rect.x + objects[i].rect.width) / scale;
             float y1 = (objects[i].rect.y + objects[i].rect.height) / scale;
+            float landmark_x1=objects[i].landmarks_x1 /scale;
+            float landmark_y1=objects[i].landmarks_y1 /scale;
+            float landmark_x2=objects[i].landmarks_x2 /scale;
+            float landmark_y2=objects[i].landmarks_y2 /scale;
+            float landmark_x3=objects[i].landmarks_x3 /scale;
+            float landmark_y3=objects[i].landmarks_y3 /scale;
 
             // clip
             x0 = std::max(std::min(x0, (float)(img_w - 1)), 0.f);
@@ -261,10 +312,12 @@ static void decode_outputs(float* prob, std::vector<Object>& objects, float scal
             x1 = std::max(std::min(x1, (float)(img_w - 1)), 0.f);
             y1 = std::max(std::min(y1, (float)(img_h - 1)), 0.f);
 
-            objects[i].rect.x = x0;
-            objects[i].rect.y = y0;
-            objects[i].rect.width = x1 - x0;
-            objects[i].rect.height = y1 - y0;
+            landmark_x1 = std::max(std::min(landmark_x1, (float)(img_w - 1)), 0.f);
+            landmark_y1 = std::max(std::min(landmark_y1, (float)(img_w - 1)), 0.f);
+            landmark_x2 = std::max(std::min(landmark_x2, (float)(img_w - 1)), 0.f);
+            landmark_y2 = std::max(std::min(landmark_y2, (float)(img_w - 1)), 0.f);
+            landmark_x3 = std::max(std::min(landmark_x3, (float)(img_w - 1)), 0.f);
+            landmark_y3 = std::max(std::min(landmark_y3, (float)(img_w - 1)), 0.f); 
         }
 }
 
