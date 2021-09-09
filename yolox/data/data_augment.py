@@ -166,8 +166,7 @@ def _mirror(image, boxes, rads, landmarks, prob=0.5):
         image = image[:, ::-1]
         boxes[:, 0::2] = width - boxes[:, 2::-2]
         rads *= -1
-        landmarks = landmarks.copy()
-        landmarks[:, 0::2] = width - landmarks[:, 4::-2]
+        landmarks[:, 0::2] = width - landmarks[:, 0::2]
     return image, boxes, rads, landmarks
 
 
@@ -225,7 +224,7 @@ class TrainTransform:
         boxes *= r_
         landmarks *= r_
 
-        mask_b = np.minimum(boxes[:, 2], boxes[:, 3]) > 1
+        mask_b = np.minimum(boxes[:, 2], boxes[:, 3]) > 8 # Set 1 if you really need to detect '1 pixel' object
         boxes_t = boxes[mask_b]
         rads_t = rads[mask_b]
         labels_t = labels[mask_b]
