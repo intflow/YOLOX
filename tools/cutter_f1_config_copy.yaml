@@ -1,0 +1,9 @@
+video_file_path: "/works/data_fullset/mounting_ex02/mounting_ex02.mp4"
+trk_file_path: "/works/data_fullset/mounting_ex02/mounting_ex02_trk.txt"
+output_path: "/works/data_fullset/"
+column: False
+width_roi_padding: 0.0
+height_roi_padding: 0.0
+masking: True
+width: 128
+height: 128

@@ -1,0 +1,9 @@
+column: false
+height: 128
+height_roi_padding: 0.0
+masking: true
+output_path: /works/data_fullset/
+trk_file_path: /works/data_fullset/mounting_ex03/mounting_ex03_trk.txt
+video_file_path: /works/data_fullset/mounting_ex03/mounting_ex03.mp4
+width: 128
+width_roi_padding: 0.0

@@ -1,0 +1,29 @@
+#!/bin/bash
+#X11
+
+sudo docker login docker.io -u kmjeon -p 1011910119a!
+
+#sudo bash attach_NAS_ftp.sh
+sudo xhost +local:root
+
+#Mount Data folders
+#sudo mkdir /DL_data_big
+#sudo mount 192.168.0.18:/DL_data_big /DL_data_big
+#sudo mount 192.168.0.14:/NAS1 /NAS1
+
+#Pull update docker image
+sudo docker pull intflow/yolox:dev_1.0_A100_ubuntu18.04
+#sudo docker pull intflow/nvidia-odtk:20.03_v0.1_2080x8_24
+
+#Run Dockers for CenterNet+DeepSORT
+sudo docker run --name yolox \
+--gpus all --rm -p 6434:6434 \
+--mount type=bind,src=/home/ubuntu/works,dst=/works \
+--mount type=bind,src=/data,dst=/data \
+--net=host \
+--privileged \
+--ipc=host \
+-it intflow/yolox:dev_1.0_A100_ubuntu18.04 /bin/bash
+#-it intflow/nvidia-odtk:20.12_lm3_p /bin/bash
+#-it intflow/nvidia-odtk:20.03_v0.1_3090x2_63 /bin/bash
+
