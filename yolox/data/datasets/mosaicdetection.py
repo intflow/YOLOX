@@ -243,7 +243,7 @@ class MosaicDetection(Dataset):
             )
             cp_rad_origin_np *= -1
             cp_landmarks_origin_np[:, 0::2] = (
-                origin_w - cp_landmarks_origin_np[:, 0::2][:, ::-1]
+                origin_w - cp_landmarks_origin_np[:, 0::2]
             )
             
         cp_bboxes_transformed_np = cp_bboxes_origin_np.copy()

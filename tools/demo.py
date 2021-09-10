@@ -186,7 +186,7 @@ class Predictor(object):
         output = output.cpu()
 
         bboxes = output[:, 0:4]
-        landmarks = output[:, 8:8+2*3]
+        landmarks = output[:, -2*3:]
 
         # preprocessing: resize
         bboxes /= ratio

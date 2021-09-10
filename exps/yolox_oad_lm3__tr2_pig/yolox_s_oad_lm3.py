@@ -31,7 +31,7 @@ class Exp(MyExp):
         self.mosaic_prob = 0.5
         self.mixup_prob = 0.5
         self.hsv_prob = 0.5
-        self.flip_prob = 1.0
+        self.flip_prob = 0.5
         self.degrees = 5.0
         self.translate = 0.1
         self.mosaic_scale = (0.5, 2)

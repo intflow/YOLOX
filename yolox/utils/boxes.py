@@ -52,10 +52,10 @@ def postprocess(prediction, num_classes, conf_thre=0.7, nms_thre=0.45, class_agn
         # Get score and class with highest confidence
         obj_conf = image_pred[:, 4].unsqueeze(-1)
         class_conf, class_pred = torch.max(image_pred[:, 5 : 5 + num_classes], 1, keepdim=True)
-        rad_sin = image_pred[:,  7].unsqueeze(-1)
-        rad_cos = image_pred[:,  8].unsqueeze(-1)
+        rad_sin = image_pred[:,  5 + num_classes].unsqueeze(-1)
+        rad_cos = image_pred[:,  6 + num_classes].unsqueeze(-1)
         rad = torch.atan2(rad_sin,rad_cos)
-        landmarks = image_pred[:, 9:9+2*3]
+        landmarks = image_pred[:, -2*3:]
         conf_mask = (obj_conf.squeeze() * class_conf.squeeze() >= conf_thre).squeeze()
         detections = torch.cat((image_pred[:, :4], obj_conf, class_conf, class_pred.float(), rad, landmarks), 1)
         detections = detections[conf_mask]

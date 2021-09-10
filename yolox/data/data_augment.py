@@ -224,7 +224,10 @@ class TrainTransform:
         boxes *= r_
         landmarks *= r_
 
-        mask_b = np.minimum(boxes[:, 2], boxes[:, 3]) > 8 # Set 1 if you really need to detect '1 pixel' object
+        mask_b = np.minimum(boxes[:, 2], boxes[:, 3]) > 1 # Set 1 if you really need to detect '1 pixel' object
+        tmp_A = landmarks[:,:] > 0.0
+        mask_l = tmp_A[:,0] * tmp_A[:,1] * tmp_A[:,2] * tmp_A[:,3]  
+        mask_b *= mask_l 
         boxes_t = boxes[mask_b]
         rads_t = rads[mask_b]
         labels_t = labels[mask_b]
