@@ -3,6 +3,6 @@
 # Copyright (c) Intflow, Inc. and its affiliates.
 
 INTFLOW_CLASSES = (
-    "cow",
+    "pig",
     "pig"
 )
