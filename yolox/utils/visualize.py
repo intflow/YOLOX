@@ -228,12 +228,12 @@ def annot_overlay(img, dets, xyxy=True):
             sx4=seg[6]
             sy4=seg[7]
 
-            l1_x=landmarks[0]
-            l1_y=landmarks[1]
-            l2_x=landmarks[2]
-            l2_y=landmarks[3]
-            l3_x=landmarks[4]
-            l3_y=landmarks[5]
+            ##l1_x=landmarks[0]
+            ##l1_y=landmarks[1]
+            ##l2_x=landmarks[2]
+            ##l2_y=landmarks[3]
+            ##l3_x=landmarks[4]
+            ##l3_y=landmarks[5]
             try:
                 #cv2.rectangle(img, (int(x1),int(y1)), (int(x2),int(y2)), category_color[category_id], 2)
                 cv2.line(img,(int(sx1),int(sy1)),(int(sx2),int(sy2)),category_color[category_id],2)
@@ -241,9 +241,9 @@ def annot_overlay(img, dets, xyxy=True):
                 cv2.line(img,(int(sx3),int(sy3)),(int(sx4),int(sy4)),category_color[category_id],2)
                 cv2.line(img,(int(sx4),int(sy4)),(int(sx1),int(sy1)),category_color[category_id],2)
 
-                cv2.circle(img, (int(l1_x),int(l1_y)), radius=4, color=(0, 0, 255), thickness=-1)
-                cv2.circle(img, (int(l2_x),int(l2_y)), radius=4, color=(0, 255, 0), thickness=-1)
-                cv2.circle(img, (int(l3_x),int(l3_y)), radius=4, color=(0, 255, 255), thickness=-1)
+                ###cv2.circle(img, (int(l1_x),int(l1_y)), radius=4, color=(0, 0, 255), thickness=-1)
+                ###cv2.circle(img, (int(l2_x),int(l2_y)), radius=4, color=(0, 255, 0), thickness=-1)
+                ###cv2.circle(img, (int(l3_x),int(l3_y)), radius=4, color=(0, 255, 255), thickness=-1)
 
                 cv2.putText(img, category_dic[category_id], (int(sx1-10),int(sy1-10)), cv2.FONT_HERSHEY_COMPLEX_SMALL, 0.8, category_color[category_id], 1)
                 cv2.putText(img, "{:.2f}".format(rad), (int(cx-20),int(cy-30)), cv2.FONT_HERSHEY_COMPLEX_SMALL, 1.0, category_color[category_id], 2)
