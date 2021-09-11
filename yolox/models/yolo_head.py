@@ -496,7 +496,7 @@ class YOLOXHead(nn.Module):
             loss_l1 = 0.0
 
         reg_weight = 5.0
-        RAD_LM = True
+        RAD_LM = False
         if RAD_LM == True:
             rad_weight = 1.0 
             lm_weight = 0.15

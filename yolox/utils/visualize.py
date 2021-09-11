@@ -39,15 +39,15 @@ def vis(img, boxes, rads, scores, cls_ids, landmarks, conf=0.5, class_names=None
         txt_size = cv2.getTextSize(text, font, 0.4, 1)[0]
         ##cv2.rectangle(img, (x0, y0), (x1, y1), color, 2)
         cv2.circle(img,((int(cx),int(cy))), radius=6, color=color, thickness=-1)
-        cv2.ellipse(img,((int(cx),int(cy)),(int(w),int(h)),np.rad2deg(rad)),color,2)
-        cv2.line(img,(int(sx1),int(sy1)),(int(sx2),int(sy2)),color,1)
-        cv2.line(img,(int(sx2),int(sy2)),(int(sx3),int(sy3)),color,1)
-        cv2.line(img,(int(sx3),int(sy3)),(int(sx4),int(sy4)),color,1)
-        cv2.line(img,(int(sx4),int(sy4)),(int(sx1),int(sy1)),color,1)
+        ##cv2.ellipse(img,((int(cx),int(cy)),(int(w),int(h)),np.rad2deg(rad)),color,2)
+        cv2.line(img,(int(sx1),int(sy1)),(int(sx2),int(sy2)),color,2)
+        cv2.line(img,(int(sx2),int(sy2)),(int(sx3),int(sy3)),color,2)
+        cv2.line(img,(int(sx3),int(sy3)),(int(sx4),int(sy4)),color,2)
+        cv2.line(img,(int(sx4),int(sy4)),(int(sx1),int(sy1)),color,2)
 
-        cv2.circle(img, (int(l1_x),int(l1_y)), radius=4, color=(0, 0, 255), thickness=-1)
-        cv2.circle(img, (int(l2_x),int(l2_y)), radius=4, color=(0, 255, 0), thickness=-1)
-        cv2.circle(img, (int(l3_x),int(l3_y)), radius=4, color=(0, 255, 255), thickness=-1)
+        #cv2.circle(img, (int(l1_x),int(l1_y)), radius=4, color=(0, 0, 255), thickness=-1)
+        #cv2.circle(img, (int(l2_x),int(l2_y)), radius=4, color=(0, 255, 0), thickness=-1)
+        #cv2.circle(img, (int(l3_x),int(l3_y)), radius=4, color=(0, 255, 255), thickness=-1)
 
         txt_bk_color = (_COLORS[cls_id] * 255 * 0.7).astype(np.uint8).tolist()
         cv2.rectangle(

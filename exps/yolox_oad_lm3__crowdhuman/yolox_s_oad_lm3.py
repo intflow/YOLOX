@@ -28,13 +28,13 @@ class Exp(MyExp):
         self.val_ann = "label_coco_bbox.json"
 
         # --------------- transform config ----------------- #
-        self.mosaic_prob = 1.0
-        self.mixup_prob = 1.0
-        self.hsv_prob = 1.0
+        self.mosaic_prob = 0.5
+        self.mixup_prob = 0.5
+        self.hsv_prob = 0.5
         self.flip_prob = 0.5
-        self.degrees = 10.0
+        self.degrees = 5.0
         self.translate = 0.1
-        self.mosaic_scale = (0.1, 2)
+        self.mosaic_scale = (0.5, 2)
         self.mixup_scale = (0.5, 1.5)
         self.shear = 2.0
         self.perspective = 0.0
